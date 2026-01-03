@@ -207,7 +207,6 @@
             transition: all 0.3s;
             background: #f8f9fa;
             color: #333;
-            position: relative;
         }
         
         .calendar-day.other-month {
@@ -566,13 +565,20 @@
         };
         
         window.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('date').valueAsDate = new Date();
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+            }
+            
             updateSummary();
             displayWorkouts();
             renderCalendar();
             updateWeeklySummary();
             
-            // Add event listener for workout type change
             document.getElementById('workoutType').addEventListener('change', updateDynamicFields);
         });
         
@@ -592,8 +598,6 @@
         function updateDynamicFields() {
             const type = document.getElementById('workoutType').value;
             const container = document.getElementById('dynamicFields');
-            
-            console.log('Workout type selected:', type); // Debug log
             
             if (!type) {
                 container.style.display = 'none';
@@ -654,7 +658,6 @@
             }
             
             container.innerHTML = html;
-            console.log('Dynamic fields updated'); // Debug log
         }
         
         document.getElementById('workoutForm').addEventListener('submit', function(e) {
@@ -687,7 +690,11 @@
             localStorage.setItem('workouts', JSON.stringify(workouts));
             
             this.reset();
-            document.getElementById('date').valueAsDate = new Date();
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('date').value = `${year}-${month}-${day}`;
             document.getElementById('dynamicFields').style.display = 'none';
             
             updateSummary();
@@ -841,12 +848,3 @@
                 } else {
                     break;
                 }
-            }
-            document.getElementById('weekStreak').textContent = streak;
-            
-            const percentage = Math.round((weekWorkouts.length / 7) * 100);
-            document.getElementById('weekPercentage').textContent = percentage + '%';
-            
-            const typeCounts = {};
-            weekWorkouts.forEach(w => {
-                typeCounts[w.type
