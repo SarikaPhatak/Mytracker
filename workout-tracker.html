@@ -391,6 +391,7 @@
         .type-stat.gym { border-left-color: #f38181; }
         .type-stat.yoga { border-left-color: #aa96da; }
         .type-stat.hiit { border-left-color: #fcbad3; }
+        .type-stat.skip { border-left-color: #e0e0e0; }
         
         .type-stat-name {
             font-weight: 600;
@@ -437,7 +438,7 @@
                     
                     <div class="form-group">
                         <label>Workout Type</label>
-                        <select id="workoutType" required onchange="updateDynamicFields()">
+                        <select id="workoutType" required>
                             <option value="">Select workout type</option>
                             <option value="Running">🏃 Running</option>
                             <option value="Walking">🚶 Walking</option>
@@ -570,6 +571,9 @@
             displayWorkouts();
             renderCalendar();
             updateWeeklySummary();
+            
+            // Add event listener for workout type change
+            document.getElementById('workoutType').addEventListener('change', updateDynamicFields);
         });
         
         function switchTab(tabName) {
@@ -588,6 +592,8 @@
         function updateDynamicFields() {
             const type = document.getElementById('workoutType').value;
             const container = document.getElementById('dynamicFields');
+            
+            console.log('Workout type selected:', type); // Debug log
             
             if (!type) {
                 container.style.display = 'none';
@@ -648,6 +654,7 @@
             }
             
             container.innerHTML = html;
+            console.log('Dynamic fields updated'); // Debug log
         }
         
         document.getElementById('workoutForm').addEventListener('submit', function(e) {
@@ -842,8 +849,4 @@
             
             const typeCounts = {};
             weekWorkouts.forEach(w => {
-                typeCounts[w.type] = (typeCounts[w.type] || 0) + 1;
-            });
-            
-            const skipped = 7 - weekWorkouts.length;
-            if (skipped > 
+                typeCounts[w.type
