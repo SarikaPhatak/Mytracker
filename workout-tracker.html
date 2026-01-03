@@ -120,6 +120,11 @@
             border-color: #667eea;
         }
         
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
         .dynamic-fields {
             background: #f8f9fa;
             padding: 15px;
@@ -152,6 +157,10 @@
             background: #6c757d;
             color: white;
             margin-top: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
         }
         
         .calendar-section {
@@ -218,15 +227,9 @@
         }
         
         .calendar-day.workout {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
-        .calendar-day.running { background: #ff6b6b; }
-        .calendar-day.walking { background: #4ecdc4; }
-        .calendar-day.hiking { background: #95e1d3; }
-        .calendar-day.gym { background: #f38181; }
-        .calendar-day.yoga { background: #aa96da; }
-        .calendar-day.hiit { background: #fcbad3; }
         
         .calendar-day.workout:hover {
             transform: scale(1.1);
@@ -279,6 +282,10 @@
             font-size: 12px;
         }
         
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -291,9 +298,9 @@
         }
         
         .legend {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
             margin-top: 20px;
             font-size: 13px;
         }
@@ -310,96 +317,13 @@
             border-radius: 5px;
         }
         
-        .legend-box.running { background: #ff6b6b; }
-        .legend-box.walking { background: #4ecdc4; }
-        .legend-box.hiking { background: #95e1d3; }
-        .legend-box.gym { background: #f38181; }
-        .legend-box.yoga { background: #aa96da; }
-        .legend-box.hiit { background: #fcbad3; }
-        .legend-box.skip { background: #f8f9fa; border: 2px solid #e0e0e0; }
-        
-        .stats-section {
-            padding: 30px;
+        .legend-box.workout {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .chart-container {
+        .legend-box.skip {
             background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .chart-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        canvas {
-            max-width: 100%;
-            height: auto !important;
-        }
-        
-        .workout-type-stats {
-            display: grid;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .type-stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            border-left: 4px solid;
-        }
-        
-        .type-stat.running { border-left-color: #ff6b6b; }
-        .type-stat.walking { border-left-color: #4ecdc4; }
-        .type-stat.hiking { border-left-color: #95e1d3; }
-        .type-stat.gym { border-left-color: #f38181; }
-        .type-stat.yoga { border-left-color: #aa96da; }
-        .type-stat.hiit { border-left-color: #fcbad3; }
-        .type-stat.skip { border-left-color: #e0e0e0; }
-        
-        .type-stat-name {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .type-stat-count {
-            font-weight: bold;
-            color: #667eea;
+            border: 2px solid #e0e0e0;
         }
     </style>
 </head>
@@ -413,20 +337,18 @@
                     <div class="summary-value" id="totalWorkouts">0</div>
                 </div>
                 <div class="summary-item">
-                    <div>This Week</div>
-                    <div class="summary-value" id="weekWorkouts">0</div>
+                    <div>This Month</div>
+                    <div class="summary-value" id="monthWorkouts">0</div>
                 </div>
             </div>
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('log')">Log</button>
+            <button class="tab active" onclick="switchTab('log')">Log Workout</button>
             <button class="tab" onclick="switchTab('calendar')">Calendar</button>
-            <button class="tab" onclick="switchTab('summary')">Summary</button>
             <button class="tab" onclick="switchTab('history')">History</button>
         </div>
         
-        <!-- Log Workout Tab -->
         <div id="logTab" class="tab-content active">
             <div class="form-section">
                 <form id="workoutForm">
@@ -461,7 +383,6 @@
             </div>
         </div>
         
-        <!-- Calendar Tab -->
         <div id="calendarTab" class="tab-content">
             <div class="calendar-section">
                 <div class="calendar-header">
@@ -472,28 +393,8 @@
                 <div class="calendar-grid" id="calendarGrid"></div>
                 <div class="legend">
                     <div class="legend-item">
-                        <div class="legend-box running"></div>
-                        <span>Running</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box walking"></div>
-                        <span>Walking</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box hiking"></div>
-                        <span>Hiking</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box gym"></div>
-                        <span>Gym</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box yoga"></div>
-                        <span>Yoga</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box hiit"></div>
-                        <span>HIIT</span>
+                        <div class="legend-box workout"></div>
+                        <span>Workout Day</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box skip"></div>
@@ -503,43 +404,6 @@
             </div>
         </div>
         
-        <!-- Summary Tab -->
-        <div id="summaryTab" class="tab-content">
-            <div class="stats-section">
-                <h2 style="font-size: 24px; color: #333; margin-bottom: 20px; text-align: center;">Weekly Summary</h2>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="weekTotal">0</div>
-                        <div class="stat-label">Workouts This Week</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="weekSkipped">0</div>
-                        <div class="stat-label">Days Skipped</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="weekStreak">0</div>
-                        <div class="stat-label">Current Streak</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="weekPercentage">0%</div>
-                        <div class="stat-label">Activity Rate</div>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <div class="chart-title">Workout Distribution</div>
-                    <canvas id="pieChart"></canvas>
-                </div>
-                
-                <div class="chart-container">
-                    <div class="chart-title">Breakdown by Type</div>
-                    <div class="workout-type-stats" id="typeBreakdown"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- History Tab -->
         <div id="historyTab" class="tab-content">
             <div class="form-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -555,29 +419,16 @@
         let workouts = JSON.parse(localStorage.getItem('workouts')) || [];
         let currentCalendarDate = new Date();
         
-        const workoutColors = {
-            'Running': 'running',
-            'Walking': 'walking',
-            'Hiking': 'hiking',
-            'Gym': 'gym',
-            'Yoga': 'yoga',
-            'HIIT': 'hiit'
-        };
-        
         window.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.getElementById('date');
-            if (dateInput) {
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                dateInput.value = `${year}-${month}-${day}`;
-            }
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('date').value = `${year}-${month}-${day}`;
             
             updateSummary();
             displayWorkouts();
             renderCalendar();
-            updateWeeklySummary();
             
             document.getElementById('workoutType').addEventListener('change', updateDynamicFields);
         });
@@ -586,13 +437,17 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            const tabs = ['log', 'calendar', 'summary', 'history'];
-            const index = tabs.indexOf(tabName);
-            document.querySelectorAll('.tab')[index].classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-            
-            if (tabName === 'calendar') renderCalendar();
-            if (tabName === 'summary') updateWeeklySummary();
+            if (tabName === 'log') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('logTab').classList.add('active');
+            } else if (tabName === 'calendar') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('calendarTab').classList.add('active');
+                renderCalendar();
+            } else if (tabName === 'history') {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('historyTab').classList.add('active');
+            }
         }
         
         function updateDynamicFields() {
@@ -700,7 +555,6 @@
             updateSummary();
             displayWorkouts();
             renderCalendar();
-            updateWeeklySummary();
             
             alert('Workout logged successfully! 💪');
         });
@@ -709,111 +563,71 @@
             const list = document.getElementById('workoutsList');
             
             if (workouts.length === 0) {
-                list.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🏃</div>
-                        <div>No workouts logged yet. Start tracking!</div>
-                    </div>
-                `;
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏃</div><div>No workouts logged yet. Start tracking!</div></div>';
                 return;
             }
             
             list.innerHTML = workouts.map(workout => {
                 const date = new Date(workout.date);
                 const formattedDate = date.toLocaleDateString('en-IN', { 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric',
-                    weekday: 'short'
+                    day: 'numeric', month: 'short', year: 'numeric', weekday: 'short'
                 });
                 
                 let details = '';
-                if (workout.distance) {
-                    details += `<div><strong>📏</strong> Distance: ${workout.distance} km</div>`;
-                }
+                if (workout.distance) details += `<div><strong>📏</strong> Distance: ${workout.distance} km</div>`;
                 if (workout.duration) {
                     const unit = workout.type === 'Hiking' ? 'hours' : 'minutes';
                     details += `<div><strong>⏱️</strong> Duration: ${workout.duration} ${unit}</div>`;
                 }
-                if (workout.muscleGroup) {
-                    details += `<div><strong>💪</strong> Muscle Group: ${workout.muscleGroup}</div>`;
-                }
+                if (workout.muscleGroup) details += `<div><strong>💪</strong> Muscle Group: ${workout.muscleGroup}</div>`;
                 
-                return `
-                    <div class="workout-item">
-                        <div class="workout-header">
-                            <div>
-                                <div class="workout-type">${workout.type}</div>
-                                <span class="workout-badge">${formattedDate}</span>
-                            </div>
-                            <button class="delete-btn" onclick="deleteWorkout(${workout.id})">Delete</button>
-                        </div>
-                        <div class="workout-details">
-                            ${details}
-                            ${workout.notes ? `<div><strong>📝</strong> ${workout.notes}</div>` : ''}
-                        </div>
-                    </div>
-                `;
+                return `<div class="workout-item"><div class="workout-header"><div><div class="workout-type">${workout.type}</div><span class="workout-badge">${formattedDate}</span></div><button class="delete-btn" onclick="deleteWorkout(${workout.id})">Delete</button></div><div class="workout-details">${details}${workout.notes ? `<div><strong>📝</strong> ${workout.notes}</div>` : ''}</div></div>`;
             }).join('');
         }
         
         function updateSummary() {
             document.getElementById('totalWorkouts').textContent = workouts.length;
-            
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            const weekCount = workouts.filter(w => new Date(w.date) >= weekAgo).length;
-            document.getElementById('weekWorkouts').textContent = weekCount;
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthCount = workouts.filter(w => {
+                const wDate = new Date(w.date);
+                return wDate.getMonth() === currentMonth && wDate.getFullYear() === currentYear;
+            }).length;
+            document.getElementById('monthWorkouts').textContent = monthCount;
         }
         
         function renderCalendar() {
             const year = currentCalendarDate.getFullYear();
             const month = currentCalendarDate.getMonth();
-            
-            document.getElementById('calendarTitle').textContent = 
-                currentCalendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            document.getElementById('calendarTitle').textContent = currentCalendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
             
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const daysInPrevMonth = new Date(year, month, 0).getDate();
-            
             const grid = document.getElementById('calendarGrid');
             let html = '';
             
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            dayHeaders.forEach(day => {
-                html += `<div class="calendar-day-header">${day}</div>`;
-            });
+            dayHeaders.forEach(day => html += `<div class="calendar-day-header">${day}</div>`);
             
-            for (let i = firstDay - 1; i >= 0; i--) {
-                html += `<div class="calendar-day other-month">${daysInPrevMonth - i}</div>`;
-            }
+            for (let i = firstDay - 1; i >= 0; i--) html += `<div class="calendar-day other-month">${daysInPrevMonth - i}</div>`;
             
             const today = new Date();
-            const workoutMap = {};
-            workouts.forEach(w => {
-                workoutMap[w.date] = w.type;
-            });
+            const workoutDates = new Set(workouts.map(w => w.date));
             
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
-                const workoutType = workoutMap[dateStr];
-                
+                const hasWorkout = workoutDates.has(dateStr);
                 let classes = 'calendar-day';
                 if (isToday) classes += ' today';
-                if (workoutType) {
-                    classes += ' workout ' + workoutColors[workoutType];
-                }
-                
+                if (hasWorkout) classes += ' workout';
                 html += `<div class="${classes}">${day}</div>`;
             }
             
             const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
             const remainingCells = totalCells - (firstDay + daysInMonth);
-            for (let i = 1; i <= remainingCells; i++) {
-                html += `<div class="calendar-day other-month">${i}</div>`;
-            }
+            for (let i = 1; i <= remainingCells; i++) html += `<div class="calendar-day other-month">${i}</div>`;
             
             grid.innerHTML = html;
         }
@@ -823,28 +637,47 @@
             renderCalendar();
         }
         
-        function updateWeeklySummary() {
-            const today = new Date();
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            
-            const weekWorkouts = workouts.filter(w => {
-                const wDate = new Date(w.date);
-                return wDate >= weekAgo && wDate <= today;
+        function deleteWorkout(id) {
+            if (confirm('Delete this workout?')) {
+                workouts = workouts.filter(w => w.id !== id);
+                localStorage.setItem('workouts', JSON.stringify(workouts));
+                displayWorkouts();
+                updateSummary();
+                renderCalendar();
+            }
+        }
+        
+        function clearAllWorkouts() {
+            if (confirm('Delete ALL workouts? This cannot be undone!')) {
+                workouts = [];
+                localStorage.setItem('workouts', JSON.stringify(workouts));
+                displayWorkouts();
+                updateSummary();
+                renderCalendar();
+            }
+        }
+        
+        function exportToCSV() {
+            if (workouts.length === 0) {
+                alert('No workouts to export!');
+                return;
+            }
+            let csv = 'Date,Type,Distance,Duration,Muscle Group,Notes\n';
+            workouts.forEach(workout => {
+                const date = new Date(workout.date).toLocaleDateString('en-IN');
+                csv += `"${date}","${workout.type}","${workout.distance || ''}","${workout.duration || ''}","${workout.muscleGroup || ''}","${workout.notes}"\n`;
             });
-            
-            document.getElementById('weekTotal').textContent = weekWorkouts.length;
-            document.getElementById('weekSkipped').textContent = 7 - weekWorkouts.length;
-            
-            const sortedWorkouts = [...workouts].sort((a, b) => new Date(b.date) - new Date(a.date));
-            let streak = 0;
-            let checkDate = new Date();
-            for (let workout of sortedWorkouts) {
-                const wDate = new Date(workout.date);
-                const diffDays = Math.floor((checkDate - wDate) / (1000 * 60 * 60 * 24));
-                if (diffDays <= 1) {
-                    streak++;
-                    checkDate = wDate;
-                } else {
-                    break;
-                }
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `workouts_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            alert('CSV file downloaded! 📊');
+        }
+    </script>
+</body>
+</html>
