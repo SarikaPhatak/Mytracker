@@ -203,6 +203,7 @@ textarea {
 <div class="tabs">
     <button class="tab active" onclick="showTab('log')">Log Workout</button>
     <button class="tab" onclick="showTab('calendar')">Calendar</button>
+    <button class="tab" onclick="showTab('analysis')">Analysis</button>
     <button class="tab" onclick="showTab('history')">History</button>
 </div>
 
@@ -243,6 +244,14 @@ textarea {
 <div id="calendarTab" class="tab-content">
     <h2 style="color: #333; margin-bottom: 20px;">Workout Calendar</h2>
     <div id="calendarContainer"></div>
+</div>
+
+<div id="analysisTab" class="tab-content">
+    <h2 style="color: #333; margin-bottom: 20px;">Monthly Analysis</h2>
+    <div style="max-width: 400px; margin: 0 auto;">
+        <canvas id="pieChart"></canvas>
+    </div>
+    <div id="statsBreakdown" style="margin-top: 30px;"></div>
 </div>
 
 <div id="historyTab" class="tab-content">
