@@ -113,7 +113,13 @@ textarea {
 <body>
     <div class="container">
     <h1>💪 Workout Tracker</h1>
-    
+
+<div class="tabs">
+    <button class="tab active" onclick="showTab('log')">Log Workout</button>
+    <button class="tab" onclick="showTab('calendar')">Calendar</button>
+</div>
+
+<div id="logTab" class="tab-content active">
     <form id="workoutForm">
         <div class="form-group">
             <label>Date</label>
@@ -134,9 +140,8 @@ textarea {
         </div>
         
         <div id="dynamicFields" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 10px;">
-        <!-- Dynamic fields will appear here -->
         </div>
-
+        
         <div class="form-group">
             <label>Notes (Optional)</label>
             <textarea id="notes" placeholder="How did you feel?"></textarea>
@@ -144,12 +149,16 @@ textarea {
         
         <button type="submit" class="btn">Log Workout</button>
     </form>
-
+    
     <div style="margin-top: 40px;">
         <h2 style="color: #333; margin-bottom: 20px;">Workout History</h2>
         <div id="workoutsList"></div>
     </div>
+</div>
 
+<div id="calendarTab" class="tab-content">
+    <h2 style="color: #333; margin-bottom: 20px;">Workout Calendar</h2>
+    <div id="calendarContainer"></div>
 </div>
 
 
