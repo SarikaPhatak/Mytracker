@@ -421,6 +421,41 @@ function showTab(tabName) {
         document.querySelector('.tab:last-child').classList.add('active');
     }
 }
+let currentCalendarDate = new Date();
+
+function renderCalendar() {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    const container = document.getElementById('calendarContainer');
+    
+    // Calendar header with navigation
+    let html = `
+        <div class="calendar-header">
+            <button class="calendar-nav" onclick="changeMonth(-1)">←</button>
+            <h3>${currentCalendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</h3>
+            <button class="calendar-nav" onclick="changeMonth(1)">→</button>
+        </div>
+        <div class="calendar-grid">
+    `;
+    
+    // Day headers
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    days.forEach(day => {
+        html += `<div style="text-align: center; font-weight: 600; color: #666; padding: 10px; font-size: 12px;">${day}</div>`;
+    });
+    
+    // Get calendar info
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Create workout map
+    const workoutMap = {};
+    workouts.forEach(w => {
+        workoutMap[w.date] = w.type.toLowerCase();
+    });
+    
+    // Empty cells before mon
     </script>
 </body>
 </html>
