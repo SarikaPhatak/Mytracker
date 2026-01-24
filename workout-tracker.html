@@ -119,7 +119,73 @@ textarea {
 </div>
 
     <script>
-        // JavaScript will go here
+        // Set today's date as default
+const today = new Date();
+document.getElementById('date').value = today.toISOString().split('T')[0];
+
+// Handle workout type changes
+document.getElementById('workoutType').addEventListener('change', function() {
+    const type = this.value;
+    const container = document.getElementById('dynamicFields');
+    
+    if (!type) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    let html = '';
+    
+    if (type === 'Running' || type === 'Walking') {
+        html = `
+            <div class="form-group">
+                <label>Distance (km)</label>
+                <input type="number" id="distance" step="0.1" placeholder="5.0">
+            </div>
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="duration" placeholder="30">
+            </div>
+        `;
+    } else if (type === 'Hiking') {
+        html = `
+            <div class="form-group">
+                <label>Distance (km)</label>
+                <input type="number" id="distance" step="0.1" placeholder="10.0">
+            </div>
+            <div class="form-group">
+                <label>Duration (hours)</label>
+                <input type="number" id="duration" step="0.5" placeholder="2.5">
+            </div>
+        `;
+    } else if (type === 'Gym') {
+        html = `
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="duration" placeholder="60">
+            </div>
+            <div class="form-group">
+                <label>Muscle Group</label>
+                <select id="muscleGroup">
+                    <option value="Chest">Chest</option>
+                    <option value="Back">Back</option>
+                    <option value="Legs">Legs</option>
+                    <option value="Arms">Arms</option>
+                    <option value="Core">Core</option>
+                </select>
+            </div>
+        `;
+    } else if (type === 'Yoga' || type === 'HIIT') {
+        html = `
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="duration" placeholder="45">
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+});
     </script>
 </body>
 </html>
