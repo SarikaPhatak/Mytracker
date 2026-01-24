@@ -37,9 +37,35 @@ h1 {
 </head>
 <body>
     <div class="container">
-        <h1>💪 Workout Tracker</h1>
-        <p>Let's build this step by step!</p>
-    </div>
+    <h1>💪 Workout Tracker</h1>
+    
+    <form id="workoutForm">
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="date" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Workout Type</label>
+            <select id="workoutType" required>
+                <option value="">Select workout type</option>
+                <option value="Running">🏃 Running</option>
+                <option value="Walking">🚶 Walking</option>
+                <option value="Hiking">🥾 Hiking</option>
+                <option value="Gym">🏋️ Gym</option>
+                <option value="Yoga">🧘 Yoga</option>
+                <option value="HIIT">⚡ HIIT</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Notes (Optional)</label>
+            <textarea id="notes" placeholder="How did you feel?"></textarea>
+        </div>
+        
+        <button type="submit" class="btn">Log Workout</button>
+    </form>
+</div>
 
     <script>
         // JavaScript will go here
