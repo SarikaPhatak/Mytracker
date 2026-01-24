@@ -349,6 +349,28 @@ function displayWorkouts() {
 
 // Display workouts when page loads
 displayWorkouts();
+
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    
+    // Add active class to clicked tab
+    if (tabName === 'log') {
+        document.querySelector('.tab:first-child').classList.add('active');
+    } else {
+        document.querySelector('.tab:last-child').classList.add('active');
+    }
+}
     </script>
 </body>
 </html>
