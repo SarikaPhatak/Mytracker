@@ -186,6 +186,49 @@ document.getElementById('workoutType').addEventListener('change', function() {
     
     container.innerHTML = html;
 });
+
+// Initialize workouts array
+let workouts = JSON.parse(localStorage.getItem('workouts')) || [];
+
+// Handle form submission
+document.getElementById('workoutForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const type = document.getElementById('workoutType').value;
+    const workout = {
+        id: Date.now(),
+        date: document.getElementById('date').value,
+        type: type,
+        notes: document.getElementById('notes').value
+    };
+    
+    // Add type-specific fields
+    if (type === 'Running' || type === 'Walking' || type === 'Hiking') {
+        const distanceInput = document.getElementById('distance');
+        const durationInput = document.getElementById('duration');
+        if (distanceInput) workout.distance = parseFloat(distanceInput.value) || 0;
+        if (durationInput) workout.duration = parseFloat(durationInput.value) || 0;
+    } else if (type === 'Gym') {
+        const durationInput = document.getElementById('duration');
+        const muscleGroupInput = document.getElementById('muscleGroup');
+        if (durationInput) workout.duration = parseFloat(durationInput.value) || 0;
+        if (muscleGroupInput) workout.muscleGroup = muscleGroupInput.value;
+    } else if (type === 'Yoga' || type === 'HIIT') {
+        const durationInput = document.getElementById('duration');
+        if (durationInput) workout.duration = parseFloat(durationInput.value) || 0;
+    }
+    
+    // Save to array and localStorage
+    workouts.unshift(workout);
+    localStorage.setItem('workouts', JSON.stringify(workouts));
+    
+    // Reset form
+    this.reset();
+    document.getElementById('date').value = today.toISOString().split('T')[0];
+    document.getElementById('dynamicFields').style.display = 'none';
+    
+    alert('Workout logged! 💪');
+});
     </script>
 </body>
 </html>
