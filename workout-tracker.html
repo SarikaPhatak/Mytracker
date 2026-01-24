@@ -203,6 +203,7 @@ textarea {
 <div class="tabs">
     <button class="tab active" onclick="showTab('log')">Log Workout</button>
     <button class="tab" onclick="showTab('calendar')">Calendar</button>
+    <button class="tab" onclick="showTab('history')">History</button>
 </div>
 
 <div id="logTab" class="tab-content active">
@@ -236,10 +237,7 @@ textarea {
         <button type="submit" class="btn">Log Workout</button>
     </form>
     
-    <div style="margin-top: 40px;">
-        <h2 style="color: #333; margin-bottom: 20px;">Workout History</h2>
-        <div id="workoutsList"></div>
-    </div>
+  
 </div>
 
 <div id="calendarTab" class="tab-content">
@@ -247,6 +245,10 @@ textarea {
     <div id="calendarContainer"></div>
 </div>
 
+<div id="historyTab" class="tab-content">
+    <h2 style="color: #333; margin-bottom: 20px;">Workout History</h2>
+    <div id="workoutsList"></div>
+</div>
 
     <script>
         // Set today's date as default
