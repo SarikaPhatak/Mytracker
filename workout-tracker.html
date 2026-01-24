@@ -10,23 +10,23 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
+    }
 
-body {
+    body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
-}
+    }
 
-.container {
-    max-width: 600px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
+    .container {
+     max-width: 600px;
+     margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
 
 h1 {
     color: #667eea;
@@ -79,7 +79,35 @@ textarea {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
-    </style>
+
+.workout-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.workout-type {
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+
+.workout-details {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+</style>
     
 </head>
 <body>
@@ -116,7 +144,14 @@ textarea {
         
         <button type="submit" class="btn">Log Workout</button>
     </form>
+
+    <div style="margin-top: 40px;">
+        <h2 style="color: #333; margin-bottom: 20px;">Workout History</h2>
+        <div id="workoutsList"></div>
+    </div>
+
 </div>
+
 
     <script>
         // Set today's date as default
@@ -228,7 +263,47 @@ document.getElementById('workoutForm').addEventListener('submit', function(e) {
     document.getElementById('dynamicFields').style.display = 'none';
     
     alert('Workout logged! 💪');
+    displayWorkouts();
 });
+function displayWorkouts() {
+    const list = document.getElementById('workoutsList');
+    
+    if (workouts.length === 0) {
+        list.innerHTML = '<div class="empty-state">No workouts yet. Start logging! 🏃</div>';
+        return;
+    }
+    
+    list.innerHTML = workouts.map(workout => {
+        const date = new Date(workout.date).toLocaleDateString('en-IN', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short', 
+            year: 'numeric' 
+        });
+        
+        let details = '';
+        if (workout.distance) details += `📏 ${workout.distance} km<br>`;
+        if (workout.duration) {
+            const unit = workout.type === 'Hiking' ? 'hours' : 'minutes';
+            details += `⏱️ ${workout.duration} ${unit}<br>`;
+        }
+        if (workout.muscleGroup) details += `💪 ${workout.muscleGroup}<br>`;
+        if (workout.notes) details += `📝 ${workout.notes}`;
+        
+        return `
+            <div class="workout-item">
+                <div class="workout-type">${workout.type}</div>
+                <div class="workout-details">
+                    📅 ${date}<br>
+                    ${details}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Display workouts when page loads
+displayWorkouts();
     </script>
 </body>
 </html>
