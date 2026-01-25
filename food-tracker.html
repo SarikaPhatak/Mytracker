@@ -152,6 +152,14 @@
 <body>
     <div class="container">
     <h1>🍽️ Food Tracker</h1>
+
+        <div class="tabs">
+        <button class="tab active" onclick="showTab('log')">Log Food</button>
+        <button class="tab" onclick="showTab('summary')">Summary</button>
+        <button class="tab" onclick="showTab('history')">History</button>
+    </div>
+
+    <div id="logTab" class="tab-content active">
     
     <form id="foodForm">
         <div class="form-group">
@@ -211,17 +219,19 @@
         
         <button type="submit" class="btn">Log Food</button>
     </form>
+ 
+</div>
 
-        <div style="margin-top: 40px;">
+    <div id="summaryTab" class="tab-content">
         <h2 style="color: #333; margin-bottom: 20px;">Today's Summary</h2>
-        <div id="dailySummary" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px;">
-            <!-- Daily totals will go here -->
-        </div>
-        
+        <div id="dailySummary"></div>
+    </div>
+
+    <div id="historyTab" class="tab-content">
         <h2 style="color: #333; margin-bottom: 20px;">Food History</h2>
         <div id="foodsList"></div>
     </div>
-</div>
+
 
  <script>
       // Set current date and time as default
