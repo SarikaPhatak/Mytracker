@@ -215,6 +215,25 @@ textarea {
     font-size: 18px;
 }
 
+.legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+}
+
 </style>
     
 </head>
@@ -272,9 +291,12 @@ textarea {
     <h2 style="color: #333; margin-bottom: 20px;">Monthly Analysis</h2>
     <div style="max-width: 400px; margin: 0 auto;">
         <canvas id="pieChart"></canvas>
+        <div id="chartLegend" style="margin-top: 20px;"></div>
     </div>
     <div id="statsBreakdown" style="margin-top: 30px;"></div>
 </div>
+
+
 
 <div id="historyTab" class="tab-content">
     <h2 style="color: #333; margin-bottom: 20px;">Workout History</h2>
@@ -560,6 +582,28 @@ function renderAnalysis() {
     
     // Draw pie chart
     drawPieChart(typeCounts);
+    
+    // Show legend
+const legend = document.getElementById('chartLegend');
+legend.innerHTML = '<div class="legend">';
+Object.entries(typeCounts).forEach(([type, count]) => {
+    const colors = {
+        'Running': '#ff6b6b',
+        'Walking': '#4ecdc4',
+        'Hiking': '#95e1d3',
+        'Gym': '#f38181',
+        'Yoga': '#aa96da',
+        'HIIT': '#fcbad3',
+        'No Workout': '#e0e0e0'
+    };
+    legend.innerHTML += `
+        <div class="legend-item">
+            <div class="legend-color" style="background: ${colors[type]};"></div>
+            <span>${type}</span>
+        </div>
+    `;
+});
+legend.innerHTML += '</div>';
     
     // Show breakdown
     const breakdown = document.getElementById('statsBreakdown');
