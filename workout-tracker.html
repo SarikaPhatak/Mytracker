@@ -216,8 +216,8 @@ textarea {
 }
 
 .legend {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+   flex-direction: column;
     gap: 10px;
 }
 
@@ -232,7 +232,7 @@ textarea {
     width: 20px;
     height: 20px;
     border-radius: 5px;
-}
+    flex-shrink: 0;
 
 </style>
     
@@ -289,11 +289,11 @@ textarea {
 
 <div id="analysisTab" class="tab-content">
     <h2 style="color: #333; margin-bottom: 20px;">Monthly Analysis</h2>
-    <div style="max-width: 400px; margin: 0 auto;">
-        <canvas id="pieChart"></canvas>
-        <div id="chartLegend" style="margin-top: 20px;"></div>
+    <div style="display: flex; gap: 30px; align-items: center; justify-content: center; margin-bottom: 30px;">
+        <canvas id="pieChart" style="flex-shrink: 0;"></canvas>
+        <div id="chartLegend"></div>
     </div>
-    <div id="statsBreakdown" style="margin-top: 30px;"></div>
+    <div id="statsBreakdown"></div>
 </div>
 
 
@@ -582,7 +582,7 @@ function renderAnalysis() {
     
     // Draw pie chart
     drawPieChart(typeCounts);
-    
+
     // Show legend
 const legend = document.getElementById('chartLegend');
 legend.innerHTML = '<div class="legend">';
