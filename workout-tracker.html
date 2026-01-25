@@ -532,6 +532,19 @@ function renderCalendar() {
         let classes = 'calendar-day';
         if (isToday) classes += ' today';
         if (workoutType) classes += ' workout ' + workoutType;
+
+         // Build tooltip
+    let title = '';
+    if (workout) {
+        title = `${workout.type}`;
+        if (workout.distance) title += `\nDistance: ${workout.distance} km`;
+        if (workout.duration) {
+            const unit = workout.type === 'Hiking' ? 'hours' : 'minutes';
+            title += `\nDuration: ${workout.duration} ${unit}`;
+        }
+        if (workout.muscleGroup) title += `\nMuscle: ${workout.muscleGroup}`;
+        if (workout.notes) title += `\nNotes: ${workout.notes}`;
+    }
         
         html += `<div class="${classes}">${day}</div>`;
     }
