@@ -193,6 +193,28 @@ textarea {
     cursor: pointer;
     font-weight: 600;
 }
+
+.stat-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 18px;
+}
+
 </style>
     
 </head>
@@ -509,6 +531,110 @@ showTab = function(tabName) {
         renderCalendar();
     }
 };
+
+function renderAnalysis() {
+    // Get current month workouts
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const monthWorkouts = workouts.filter(w => {
+        const wDate = new Date(w.date);
+        return wDate.getMonth() === currentMonth && wDate.getFullYear() === currentYear;
+    });
+    
+    // Count by type
+    const typeCounts = {};
+    monthWorkouts.forEach(w => {
+        typeCounts[w.type] = (typeCounts[w.type] || 0) + 1;
+    });
+    
+    // Calculate days in current month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const workoutDays = monthWorkouts.length;
+    const noWorkoutDays = daysInMonth - workoutDays;
+    
+    if (noWorkoutDays > 0) {
+        typeCounts['No Workout'] = noWorkoutDays;
+    }
+    
+    // Draw pie chart
+    drawPieChart(typeCounts);
+    
+    // Show breakdown
+    const breakdown = document.getElementById('statsBreakdown');
+    breakdown.innerHTML = '<h3 style="color: #333; margin-bottom: 15px;">Breakdown</h3>';
+    
+    Object.entries(typeCounts).forEach(([type, count]) => {
+        const percentage = ((count / daysInMonth) * 100).toFixed(1);
+        breakdown.innerHTML += `
+            <div class="stat-card">
+                <span class="stat-label">${type}</span>
+                <span class="stat-value">${count} days (${percentage}%)</span>
+            </div>
+        `;
+    });
+}
+
+function drawPieChart(data) {
+    const canvas = document.getElementById('pieChart');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 300;
+    canvas.height = 300;
+    
+    const colors = {
+        'Running': '#ff6b6b',
+        'Walking': '#4ecdc4',
+        'Hiking': '#95e1d3',
+        'Gym': '#f38181',
+        'Yoga': '#aa96da',
+        'HIIT': '#fcbad3',
+        'No Workout': '#e0e0e0'
+    };
+    
+    const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+    
+    if (total === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data for this month', 150, 150);
+        return;
+    }
+    
+    let currentAngle = -Math.PI / 2;
+    const centerX = 150;
+    const centerY = 150;
+    const radius = 120;
+    
+    Object.entries(data).forEach(([type, count]) => {
+        const sliceAngle = (count / total) * 2 * Math.PI;
+        
+        // Draw slice
+        ctx.fillStyle = colors[type] || '#667eea';
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw label
+        if (count > 0) {
+            const labelAngle = currentAngle + sliceAngle / 2;
+            const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+            const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(count, labelX, labelY);
+        }
+        
+        currentAngle += sliceAngle;
+    });
+}
     </script>
 </body>
 </html>
