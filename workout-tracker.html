@@ -426,12 +426,19 @@ function showTab(tabName) {
     document.getElementById(tabName + 'Tab').classList.add('active');
     
     // Add active class to clicked tab
-    if (tabName === 'log') {
-        document.querySelector('.tab:first-child').classList.add('active');
-    } else {
-        document.querySelector('.tab:last-child').classList.add('active');
+    const tabs = ['log', 'calendar', 'analysis', 'history'];
+    const index = tabs.indexOf(tabName);
+    document.querySelectorAll('.tab')[index].classList.add('active');
+    
+    // Special actions for certain tabs
+    if (tabName === 'calendar') {
+        renderCalendar();
+    }
+    if (tabName === 'analysis') {
+        renderAnalysis();
     }
 }
+
 let currentCalendarDate = new Date();
 
 function renderCalendar() {
