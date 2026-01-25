@@ -234,6 +234,20 @@ textarea {
     border-radius: 5px;
     flex-shrink: 0;
 
+    .delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
 </style>
     
 </head>
@@ -441,14 +455,19 @@ function displayWorkouts() {
         if (workout.notes) details += `📝 ${workout.notes}`;
         
         return `
-            <div class="workout-item">
+    <div class="workout-item">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
                 <div class="workout-type">${workout.type}</div>
                 <div class="workout-details">
                     📅 ${date}<br>
                     ${details}
                 </div>
             </div>
-        `;
+            <button class="delete-btn" onclick="deleteWorkout(${workout.id})">Delete</button>
+        </div>
+    </div>
+    `;
     }).join('');
 }
 
@@ -694,6 +713,15 @@ function drawPieChart(data) {
         
         currentAngle += sliceAngle;
     });
+}
+function deleteWorkout(id) {
+    if (confirm('Delete this workout? This cannot be undone.')) {
+        workouts = workouts.filter(w => w.id !== id);
+        localStorage.setItem('workouts', JSON.stringify(workouts));
+        displayWorkouts();
+        renderCalendar();
+        renderAnalysis();
+    }
 }
     </script>
 </body>
