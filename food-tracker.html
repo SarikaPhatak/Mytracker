@@ -154,8 +154,53 @@
     </form>
 </div>
 
-    <script>
-        // JavaScript will go here
-    </script>
+ <script>
+      // Set current date and time as default
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    // Initialize foods array
+    let foods = JSON.parse(localStorage.getItem('foods')) || [];
+
+    // Handle form submission
+    document.getElementById('foodForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const food = {
+            id: Date.now(),
+            datetime: document.getElementById('datetime').value,
+            name: document.getElementById('foodName').value,
+            portion: document.getElementById('portion').value,
+            mealType: document.getElementById('mealType').value,
+            calories: parseFloat(document.getElementById('calories').value),
+            protein: parseFloat(document.getElementById('protein').value),
+            carbs: parseFloat(document.getElementById('carbs').value),
+            fats: parseFloat(document.getElementById('fats').value),
+            notes: document.getElementById('notes').value
+        };
+        
+        // Save to array and localStorage
+        foods.unshift(food);
+        localStorage.setItem('foods', JSON.stringify(foods));
+        
+        // Reset form
+        this.reset();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        
+        alert('Food logged! 🍽️');
+});
+
+</script>
 </body>
 </html>
