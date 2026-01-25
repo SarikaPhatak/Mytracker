@@ -525,15 +525,18 @@ function renderCalendar() {
     // Days of the month
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
-        const workoutType = workoutMap[dateStr];
-        
-        let classes = 'calendar-day';
-        if (isToday) classes += ' today';
-        if (workoutType) classes += ' workout ' + workoutType;
-
-         // Build tooltip
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+    
+    // Find workout for this day
+    const workout = workouts.find(w => w.date === dateStr);
+    const workoutType = workout ? workout.type.toLowerCase() : null;
+    
+    let classes = 'calendar-day';
+    if (isToday) classes += ' today';
+    if (workoutType) classes += ' workout ' + workoutType;
+    
+    // Build tooltip
     let title = '';
     if (workout) {
         title = `${workout.type}`;
@@ -545,9 +548,9 @@ function renderCalendar() {
         if (workout.muscleGroup) title += `\nMuscle: ${workout.muscleGroup}`;
         if (workout.notes) title += `\nNotes: ${workout.notes}`;
     }
-        
-        html += `<div class="${classes}">${day}</div>`;
-    }
+    
+    html += `<div class="${classes}" title="${title}">${day}</div>`;
+}
     
     html += '</div>';
     container.innerHTML = html;
