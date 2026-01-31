@@ -145,6 +145,42 @@
         padding: 40px;
         color: #999;
     }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab {
+        padding: 12px 24px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #666;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+        color: #667eea;
+    }
+
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
 </style>
 
 </head>
@@ -236,6 +272,25 @@
 
 
  <script>
+      // Tab switching functionality
+    function showTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        
+        // Add active class to clicked tab
+        event.target.classList.add('active');
+    }
+
       // Set current date and time as default
     const now = new Date();
     const year = now.getFullYear();
