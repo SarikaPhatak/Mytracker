@@ -296,6 +296,38 @@
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
+    }
+
+        async function searchNutrition() {
+    const foodName = document.getElementById('foodName').value.trim();
+    
+    // Check if user entered a food name
+    if (!foodName) {
+        alert('Please enter a food name first!');
+        return;
+    }
+    
+    // Step 1: Check if we already have this food saved locally
+    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+    
+    if (savedNutrition[foodName.toLowerCase()]) {
+        // We found it in our saved database!
+        const nutrition = savedNutrition[foodName.toLowerCase()];
+        fillNutritionFields(nutrition);
+        alert('Found in your saved foods! ✅');
+        return;
+    }
+    
+    // Step 2: If not found locally, we'll search the internet
+    alert('Searching the internet for nutrition info... (We will build this next!)');
+    }
+
+    function fillNutritionFields(nutrition) {
+    document.getElementById('calories').value = nutrition.calories || 0;
+    document.getElementById('protein').value = nutrition.protein || 0;
+    document.getElementById('carbs').value = nutrition.carbs || 0;
+    document.getElementById('fats').value = nutrition.fats || 0;
+    }
         
         // Remove active class from all tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -307,7 +339,7 @@
         
         // Add active class to clicked tab
         event.target.classList.add('active');
-    }
+    
 
       // Set current date and time as default
     const now = new Date();
