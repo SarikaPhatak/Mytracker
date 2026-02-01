@@ -181,6 +181,21 @@
     .tab-content.active {
         display: block;
     }
+
+    .search-btn {
+    padding: 12px 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    }
+
+    .search-btn:hover {
+    background: #218838;
+    }
 </style>
 
 </head>
@@ -204,9 +219,12 @@
         </div>
         
         <div class="form-group">
-            <label>Food Name</label>
-            <input type="text" id="foodName" placeholder="e.g., Roti, Dal, Rice" required>
-        </div>
+    <label>Food Name</label>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="foodName" placeholder="e.g., Roti, Dal, Rice" required style="flex: 1;">
+        <button type="button" onclick="searchNutrition()" class="search-btn">🔍 Search</button>
+    </div>
+    </div>
         
         <div class="form-group">
             <label>Portion Size</label>
