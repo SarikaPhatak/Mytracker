@@ -227,9 +227,20 @@
     </div>
         
         <div class="form-group">
-            <label>Portion Size</label>
-            <input type="text" id="portion" placeholder="e.g., 2 pieces, 1 bowl, 100g" required>
+        <label>Portion Size <span style="color: red;">*</span></label>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="portionAmount" placeholder="e.g. 2" min="0.1" step="0.1" required style="flex: 1;">
+            <select id="portionUnit" required style="flex: 1;">
+                <option value="">Select unit</option>
+                <option value="pieces">Pieces</option>
+                <option value="grams">Grams</option>
+                <option value="cup">Cup</option>
+                <option value="bowl">Bowl</option>
+                <option value="tbsp">Tbsp</option>
+                <option value="tsp">Tsp</option>
+            </select>
         </div>
+    </div>
 
         <div class="form-group">
             <label>Meal Type</label>
@@ -271,7 +282,7 @@
             <textarea id="notes" placeholder="Meal type, how you felt, etc."></textarea>
         </div>
 
-        <div id="saveNutritionBar" style="display: block; background: #f0f7ff; border: 2px solid #667eea; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+        <div id="saveNutritionBar" style="display: none; background: #f0f7ff; border: 2px solid #667eea; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
         <p style="margin-bottom: 10px; color: #333; font-weight: 600;">💾 Save this food to your database for future use?</p>
         <div style="display: flex; gap: 10px;">
             <button type="button" onclick="saveToDatabase()" class="search-btn">✅ Save to My Database</button>
@@ -298,44 +309,12 @@
 
 
  <script>
-      // Tab switching functionality
+    // Tab switching functionality
     function showTab(tabName) {
         // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-    }
-
-        async function searchNutrition() {
-    const foodName = document.getElementById('foodName').value.trim();
-    
-    // Check if user entered a food name
-    if (!foodName) {
-        alert('Please enter a food name first!');
-        return;
-    }
-    
-    // Step 1: Check if we already have this food saved locally
-    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-    
-    if (savedNutrition[foodName.toLowerCase()]) {
-        // We found it in our saved database!
-        const nutrition = savedNutrition[foodName.toLowerCase()];
-        fillNutritionFields(nutrition);
-        alert('Found in your saved foods! ✅');
-        return;
-    }
-    
-    // Step 2: If not found locally, we'll search the internet
-    alert('Searching the internet for nutrition info... (We will build this next!)');
-    }
-
-    function fillNutritionFields(nutrition) {
-    document.getElementById('calories').value = nutrition.calories || 0;
-    document.getElementById('protein').value = nutrition.protein || 0;
-    document.getElementById('carbs').value = nutrition.carbs || 0;
-    document.getElementById('fats').value = nutrition.fats || 0;
-    }
         
         // Remove active class from all tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -347,9 +326,96 @@
         
         // Add active class to clicked tab
         event.target.classList.add('active');
-    
+    }
 
-      // Set current date and time as default
+    async function searchNutrition() {
+        const foodName = document.getElementById('foodName').value.trim();
+        
+        if (!foodName) {
+            alert('Please enter a food name first!');
+            return;
+        }
+        
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+        
+        if (savedNutrition[foodName.toLowerCase()]) {
+            const nutrition = savedNutrition[foodName.toLowerCase()];
+            fillNutritionFields(nutrition);
+            alert('Found in your saved foods! ✅');
+            return;
+        }
+        
+        document.getElementById('saveNutritionBar').style.display = 'block';
+        alert('Food not found in your database! Fill in the nutrition fields manually and save it for future use.');
+    }
+
+    function fillNutritionFields(nutrition) {
+        document.getElementById('calories').value = nutrition.calories || 0;
+        document.getElementById('protein').value = nutrition.protein || 0;
+        document.getElementById('carbs').value = nutrition.carbs || 0;
+        document.getElementById('fats').value = nutrition.fats || 0;
+        document.getElementById('saveNutritionBar').style.display = 'block';
+    }
+
+
+
+    function dismissSaveBar() {
+        document.getElementById('saveNutritionBar').style.display = 'none';
+    }
+
+    function saveToDatabase() {
+    const foodName = document.getElementById('foodName').value.trim();
+    const portionUnit = document.getElementById('portionUnit').value;
+
+    // Validate portion unit is selected
+    if (!portionUnit) {
+        alert('Please select a portion unit before saving!');
+        return;
+    }
+
+    // Set the base amount depending on unit
+    // For grams we use 100g as the base, everything else is 1
+    const baseAmount = portionUnit === 'grams' ? 100 : 1;
+
+    const nutrition = {
+        unit: portionUnit,
+        baseAmount: baseAmount,
+        calories: parseFloat(document.getElementById('calories').value) || 0,
+        protein: parseFloat(document.getElementById('protein').value) || 0,
+        carbs: parseFloat(document.getElementById('carbs').value) || 0,
+        fats: parseFloat(document.getElementById('fats').value) || 0
+    };
+```
+
+    **What this does:**
+    - Reads the selected unit from the dropdown
+    - Sets `baseAmount` to 100 for grams, 1 for everything else
+    - Saves the unit and baseAmount alongside the nutrition values
+
+    So your database will now look like:
+    ```
+    "roti":  { unit: "pieces", baseAmount: 1,   calories: 120, ... }
+    "rice":  { unit: "grams",  baseAmount: 100, calories: 130, ... }
+    "dal":   { unit: "cup",    baseAmount: 1,   calories: 180, ... }
+
+        if (!foodName) {
+            alert('Please enter a food name first!');
+            return;
+        }
+        if (nutrition.calories === 0) {
+            alert('Please enter at least the calories before saving!');
+            return;
+        }
+
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+        savedNutrition[foodName.toLowerCase()] = nutrition;
+        localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+
+        document.getElementById('saveNutritionBar').style.display = 'none';
+        alert(`"${foodName}" saved to your database! ✅ Next time you search it, it will auto-fill.`);
+    }
+
+    // Set current date and time as default
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -371,18 +437,16 @@
             name: document.getElementById('foodName').value,
             portion: document.getElementById('portion').value,
             mealType: document.getElementById('mealType').value,
-            calories: parseFloat(document.getElementById('calories').value)|| 0,
-            protein: parseFloat(document.getElementById('protein').value)|| 0,
-            carbs: parseFloat(document.getElementById('carbs').value)|| 0,
-            fats: parseFloat(document.getElementById('fats').value)|| 0,
+            calories: parseFloat(document.getElementById('calories').value) || 0,
+            protein: parseFloat(document.getElementById('protein').value) || 0,
+            carbs: parseFloat(document.getElementById('carbs').value) || 0,
+            fats: parseFloat(document.getElementById('fats').value) || 0,
             notes: document.getElementById('notes').value
         };
         
-        // Save to array and localStorage
         foods.unshift(food);
         localStorage.setItem('foods', JSON.stringify(foods));
         
-        // Reset form
         this.reset();
         const now = new Date();
         const year = now.getFullYear();
@@ -393,8 +457,7 @@
         document.getElementById('datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
         
         alert('Food logged! 🍽️');
-});
-
+    });
 </script>
 </body>
 </html>
