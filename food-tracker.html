@@ -303,7 +303,47 @@
  </div>
         
     <div id="summaryTab" class="tab-content">
-        <h2 style="color: #333; margin-bottom: 20px;">Today's Summary</h2>
+    <h2 style="color: #333; margin-bottom: 20px;">Today's Summary</h2>
+
+    <!-- Goals Section -->
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: #667eea;">⚙️ My Daily Goals</h3>
+            <button type="button" onclick="toggleGoalsForm()" id="goalsToggleBtn" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 25px; cursor: pointer;">✏️ Edit Goals</button>
+        </div>
+
+        <!-- Goals Form - hidden by default -->
+        <div id="goalsForm" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>🔥 Calories (kcal)</label>
+                    <input type="number" id="goalCalories" placeholder="e.g. 2000">
+                </div>
+                <div class="form-group">
+                    <label>💪 Protein (g)</label>
+                    <input type="number" id="goalProtein" placeholder="e.g. 100">
+                </div>
+                <div class="form-group">
+                    <label>🍚 Carbs (g)</label>
+                    <input type="number" id="goalCarbs" placeholder="e.g. 250">
+                </div>
+                <div class="form-group">
+                    <label>🧈 Fats (g)</label>
+                    <input type="number" id="goalFats" placeholder="e.g. 65">
+                </div>
+                <div class="form-group">
+                    <label>🌾 Fiber (g)</label>
+                    <input type="number" id="goalFiber" placeholder="e.g. 30">
+                </div>
+            </div>
+            <button type="button" onclick="saveGoals()" class="btn">💾 Save Goals</button>
+        </div>
+
+        <!-- Goals Display -->
+        <div id="goalsDisplay"></div>
+    </div>
+
+        <!-- Daily Summary -->
         <div id="dailySummary"></div>
     </div>
 
@@ -365,6 +405,10 @@
         <button type="button" onclick="addToLibrary()" class="btn">➕ Add to Library</button>
     </div>
 
+        <!-- Search Bar -->
+    <div class="form-group">
+        <input type="text" id="librarySearch" placeholder="🔍 Search your food library..." oninput="renderLibrary()">
+    </div>
         <!-- Food Library List -->
         <div id="libraryList"></div>
     </div>
@@ -467,6 +511,103 @@
         document.getElementById('saveNutritionBar').style.display = 'none';
         alert(`"${foodName}" saved to your database! ✅ Next time you search it, it will auto-fill.`);
     }
+    // ============================
+    // GOALS FUNCTIONS
+    // ============================
+
+    // Toggle goals form open/closed
+    function toggleGoalsForm() {
+        const form = document.getElementById('goalsForm');
+        const btn = document.getElementById('goalsToggleBtn');
+
+        if (form.style.display === 'none') {
+            // Load existing goals into form before showing
+            const goals = JSON.parse(localStorage.getItem('nutritionGoals')) || {};
+            if (goals.calories) document.getElementById('goalCalories').value = goals.calories;
+            if (goals.protein) document.getElementById('goalProtein').value = goals.protein;
+            if (goals.carbs) document.getElementById('goalCarbs').value = goals.carbs;
+            if (goals.fats) document.getElementById('goalFats').value = goals.fats;
+            if (goals.fiber) document.getElementById('goalFiber').value = goals.fiber;
+
+            form.style.display = 'block';
+            btn.textContent = '✖️ Cancel';
+        } else {
+            form.style.display = 'none';
+            btn.textContent = '✏️ Edit Goals';
+        }
+    }
+
+    // Save goals to localStorage
+    function saveGoals() {
+        const goals = {
+            calories: parseFloat(document.getElementById('goalCalories').value) || 0,
+            protein: parseFloat(document.getElementById('goalProtein').value) || 0,
+            carbs: parseFloat(document.getElementById('goalCarbs').value) || 0,
+            fats: parseFloat(document.getElementById('goalFats').value) || 0,
+            fiber: parseFloat(document.getElementById('goalFiber').value) || 0
+        };
+
+        // Validate at least calories is set
+        if (goals.calories === 0) {
+            alert('Please enter at least your daily calorie goal!');
+            return;
+        }
+
+        localStorage.setItem('nutritionGoals', JSON.stringify(goals));
+
+        // Hide form and refresh
+        document.getElementById('goalsForm').style.display = 'none';
+        document.getElementById('goalsToggleBtn').textContent = '✏️ Edit Goals';
+
+        alert('Goals saved! 🎯');
+        renderSummary();
+    }
+
+    // Render goals display and progress bars
+    function renderGoalsDisplay(totals) {
+        const goals = JSON.parse(localStorage.getItem('nutritionGoals')) || {};
+        const goalsDisplay = document.getElementById('goalsDisplay');
+
+        // If no goals set yet
+        if (!goals.calories) {
+            goalsDisplay.innerHTML = '<p style="color: #999; font-size: 14px;">No goals set yet. Click "Edit Goals" to set your daily targets!</p>';
+            return;
+        }
+
+        // Helper function to create a progress bar
+        function createProgressBar(label, current, goal, unit) {
+            const percentage = Math.min((current / goal) * 100, 100);
+            const actualPercentage = (current / goal) * 100;
+
+            // Color based on progress
+            let color = '#28a745';        // green = under goal
+            if (actualPercentage >= 90)  color = '#fd7e14';  // orange = near goal
+            if (actualPercentage >= 100) color = '#dc3545';  // red = over goal
+
+            return `
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-weight: 600; color: #333;">${label}</span>
+                        <span style="color: #666; font-size: 14px;">
+                            ${current} / ${goal} ${unit}
+                            <span style="color: ${color}; font-weight: 600;">(${Math.round(actualPercentage)}%)</span>
+                        </span>
+                    </div>
+                    <div style="background: #e0e0e0; border-radius: 25px; height: 12px;">
+                        <div style="background: ${color}; width: ${percentage}%; height: 12px; border-radius: 25px; transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        goalsDisplay.innerHTML = `
+            ${createProgressBar('🔥 Calories', totals.calories, goals.calories, 'kcal')}
+            ${createProgressBar('💪 Protein', totals.protein, goals.protein, 'g')}
+            ${createProgressBar('🍚 Carbs', totals.carbs, goals.carbs, 'g')}
+            ${createProgressBar('🧈 Fats', totals.fats, goals.fats, 'g')}
+            ${createProgressBar('🌾 Fiber', totals.fiber, goals.fiber, 'g')}
+        `;
+    }
     // Set current date and time as default
     const now = new Date();
     const year = now.getFullYear();
@@ -522,15 +663,29 @@ function renderLibrary() {
     const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
     const libraryList = document.getElementById('libraryList');
 
+    // Get search term if any
+    const searchInput = document.getElementById('librarySearch');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
     // If library is empty show a message
     if (Object.keys(savedNutrition).length === 0) {
         libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods in your library yet. Add one above!</p>';
         return;
     }
 
+    // Filter foods based on search term
+    const filteredFoods = Object.keys(savedNutrition).filter(foodName => 
+        foodName.toLowerCase().includes(searchTerm)
+    );
+
+    // If search returns no results
+    if (filteredFoods.length === 0) {
+        libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods found matching your search!</p>';
+        return;
+    }
     // Build HTML for each food
     let html = '';
-    for (const foodName in savedNutrition) {
+    for (const foodName of filteredFoods) {
         const food = savedNutrition[foodName];
         html += `
             <div class="food-item" id="library-${foodName}">
@@ -637,29 +792,29 @@ function editFood(foodName) {
     alert(`Editing "${foodName}" - make your changes and click Add to Library to save!`);
 }
 
-function showTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.getElementById(tabName + 'Tab').classList.add('active');
-    event.target.classList.add('active');
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        event.target.classList.add('active');
 
-    // If switching to library tab, render the list
-    if (tabName === 'library') {
-        renderLibrary();
+        // If switching to library tab, render the list
+        if (tabName === 'library') {
+            renderLibrary();
+        }
+        // If switching to history tab, render the food history
+        if (tabName === 'history') {
+            renderHistory();
+        }
+        // if switching to summary tab, render today's summary
+        if (tabName === 'summary') {
+            renderSummary();
+        }
     }
-    // If switching to history tab, render the food history
-    if (tabName === 'history') {
-        renderHistory();
-    }
-    // if switching to summary tab, render today's summary
-    if (tabName === 'summary') {
-        renderSummary();
-    }
-    
 
     function renderHistory() {
     const foods = JSON.parse(localStorage.getItem('foods')) || [];
@@ -728,6 +883,9 @@ function renderSummary() {
     // Filter only today's food entries
     const todaysFoods = foods.filter(food => food.datetime.startsWith(today));
 
+    // Always render goals display even if no foods logged
+    renderGoalsDisplay({ calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
+
     // If no foods logged today
     if (todaysFoods.length === 0) {
         summaryDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged today yet. Start logging!</p>';
@@ -749,6 +907,9 @@ function renderSummary() {
         totals[key] = Math.round(totals[key] * 10) / 10;
     });
 
+    // Update goals progress bars with actual totals
+    renderGoalsDisplay(totals);
+    
     // Group foods by meal type
     const mealGroups = {};
     todaysFoods.forEach(food => {
@@ -837,7 +998,6 @@ function renderSummary() {
     summaryDiv.innerHTML = html;
 }
 
-}
 </script>
 </body>
 </html>
