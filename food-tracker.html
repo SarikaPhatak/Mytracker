@@ -204,11 +204,12 @@
     <div class="container">
     <h1>🍽️ Food Tracker</h1>
 
-        <div class="tabs">
-        <button class="tab active" onclick="showTab('log')">Log Food</button>
-        <button class="tab" onclick="showTab('summary')">Summary</button>
-        <button class="tab" onclick="showTab('history')">History</button>
-    </div>
+    <div class="tabs">
+    <button class="tab active" onclick="showTab('log')">Log Food</button>
+    <button class="tab" onclick="showTab('summary')">Summary</button>
+    <button class="tab" onclick="showTab('history')">History</button>
+    <button class="tab" onclick="showTab('library')">📚 Food Library</button>
+</div>
 
     <div id="logTab" class="tab-content active">
     
@@ -257,6 +258,8 @@
         
         <h3 class="section-heading">Macros</h3>
         
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            
         <div class="form-group">
             <label>Calories (kcal) <span style="color: #999; font-size: 12px;">(Optional)</span></label>
             <input type="number" id="calories" placeholder="0">
@@ -276,7 +279,12 @@
             <label>Fats (g) <span style="color: #999; font-size: 12px;">(Optional)</span></label>
             <input type="number" id="fats" placeholder="0" step="0.1">
         </div>
-                
+
+        <div class="form-group">
+            <label>Fiber (g) <span style="color: #999; font-size: 12px;">(Optional)</span></label>
+            <input type="number" id="fiber" placeholder="0" step="0.1">
+        </div>
+        </div>        
         <div class="form-group">
             <label>Notes (Optional)</label>
             <textarea id="notes" placeholder="Meal type, how you felt, etc."></textarea>
@@ -292,7 +300,8 @@
         
         <button type="submit" class="btn">Log Food</button>
     </form>
-
+ </div>
+        
     <div id="summaryTab" class="tab-content">
         <h2 style="color: #333; margin-bottom: 20px;">Today's Summary</h2>
         <div id="dailySummary"></div>
@@ -301,6 +310,63 @@
     <div id="historyTab" class="tab-content">
         <h2 style="color: #333; margin-bottom: 20px;">Food History</h2>
         <div id="foodsList"></div>
+    </div>
+
+    <div id="libraryTab" class="tab-content">
+    <h2 style="color: #333; margin-bottom: 20px;">📚 Food Library</h2>
+
+    <!-- Add New Food Form -->
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+        <h3 style="color: #667eea; margin-bottom: 15px;">Add New Food</h3>
+        
+        <div class="form-group">
+            <label>Food Name</label>
+            <input type="text" id="libraryFoodName" placeholder="e.g. Roti, Poha, Rice">
+        </div>
+
+        <div class="form-group">
+            <label>Base Portion Unit</label>
+            <select id="libraryUnit">
+                <option value="">Select unit</option>
+                <option value="pieces">Pieces</option>
+                <option value="grams">Grams</option>
+                <option value="cup">Cup</option>
+                <option value="bowl">Bowl</option>
+                <option value="tbsp">Tbsp</option>
+                <option value="tsp">Tsp</option>
+            </select>
+        </div>
+
+        <h4 style="color: #333; margin-bottom: 10px;">Nutrition per 1 unit (or 100g for grams)</h4>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+                <label>Calories (kcal)</label>
+                <input type="number" id="libraryCalories" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Protein (g)</label>
+                <input type="number" id="libraryProtein" placeholder="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Carbs (g)</label>
+                <input type="number" id="libraryCarbs" placeholder="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Fats (g)</label>
+                <input type="number" id="libraryFats" placeholder="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Fiber (g)</label>
+                <input type="number" id="libraryFiber" placeholder="0" step="0.1">
+            </div>
+        </div>
+
+        <button type="button" onclick="addToLibrary()" class="btn">➕ Add to Library</button>
+    </div>
+
+        <!-- Food Library List -->
+        <div id="libraryList"></div>
     </div>
  
 </div>
@@ -354,6 +420,7 @@
         document.getElementById('protein').value = nutrition.protein || 0;
         document.getElementById('carbs').value = nutrition.carbs || 0;
         document.getElementById('fats').value = nutrition.fats || 0;
+        document.getElementById('fiber').value = nutrition.fiber || 0;
         document.getElementById('saveNutritionBar').style.display = 'block';
     }
 
@@ -364,44 +431,31 @@
     }
 
     function saveToDatabase() {
-    const foodName = document.getElementById('foodName').value.trim();
-    const portionUnit = document.getElementById('portionUnit').value;
+        const foodName = document.getElementById('foodName').value.trim();
+        const portionUnit = document.getElementById('portionUnit').value;
 
-    // Validate portion unit is selected
-    if (!portionUnit) {
-        alert('Please select a portion unit before saving!');
-        return;
-    }
-
-    // Set the base amount depending on unit
-    // For grams we use 100g as the base, everything else is 1
-    const baseAmount = portionUnit === 'grams' ? 100 : 1;
-
-    const nutrition = {
-        unit: portionUnit,
-        baseAmount: baseAmount,
-        calories: parseFloat(document.getElementById('calories').value) || 0,
-        protein: parseFloat(document.getElementById('protein').value) || 0,
-        carbs: parseFloat(document.getElementById('carbs').value) || 0,
-        fats: parseFloat(document.getElementById('fats').value) || 0
-    };
-```
-
-    **What this does:**
-    - Reads the selected unit from the dropdown
-    - Sets `baseAmount` to 100 for grams, 1 for everything else
-    - Saves the unit and baseAmount alongside the nutrition values
-
-    So your database will now look like:
-    ```
-    "roti":  { unit: "pieces", baseAmount: 1,   calories: 120, ... }
-    "rice":  { unit: "grams",  baseAmount: 100, calories: 130, ... }
-    "dal":   { unit: "cup",    baseAmount: 1,   calories: 180, ... }
+        if (!portionUnit) {
+            alert('Please select a portion unit before saving!');
+            return;
+        }
 
         if (!foodName) {
             alert('Please enter a food name first!');
             return;
         }
+
+        const baseAmount = portionUnit === 'grams' ? 100 : 1;
+
+        const nutrition = {
+            unit: portionUnit,
+            baseAmount: baseAmount,
+            calories: parseFloat(document.getElementById('calories').value) || 0,
+            protein: parseFloat(document.getElementById('protein').value) || 0,
+            carbs: parseFloat(document.getElementById('carbs').value) || 0,
+            fats: parseFloat(document.getElementById('fats').value) || 0,
+            fiber: parseFloat(document.getElementById('fiber').value) || 0
+        };
+
         if (nutrition.calories === 0) {
             alert('Please enter at least the calories before saving!');
             return;
@@ -414,7 +468,6 @@
         document.getElementById('saveNutritionBar').style.display = 'none';
         alert(`"${foodName}" saved to your database! ✅ Next time you search it, it will auto-fill.`);
     }
-
     // Set current date and time as default
     const now = new Date();
     const year = now.getFullYear();
@@ -435,12 +488,14 @@
             id: Date.now(),
             datetime: document.getElementById('datetime').value,
             name: document.getElementById('foodName').value,
-            portion: document.getElementById('portion').value,
+            portionAmount: document.getElementById('portionAmount').value,
+            portionUnit: document.getElementById('portionUnit').value,
             mealType: document.getElementById('mealType').value,
             calories: parseFloat(document.getElementById('calories').value) || 0,
             protein: parseFloat(document.getElementById('protein').value) || 0,
             carbs: parseFloat(document.getElementById('carbs').value) || 0,
             fats: parseFloat(document.getElementById('fats').value) || 0,
+            fiber: parseFloat(document.getElementById('fiber').value) || 0,
             notes: document.getElementById('notes').value
         };
         
@@ -458,6 +513,146 @@
         
         alert('Food logged! 🍽️');
     });
+
+    // ============================
+// FOOD LIBRARY CRUD FUNCTIONS
+// ============================
+
+// READ - Render all foods in the library
+function renderLibrary() {
+    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+    const libraryList = document.getElementById('libraryList');
+
+    // If library is empty show a message
+    if (Object.keys(savedNutrition).length === 0) {
+        libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods in your library yet. Add one above!</p>';
+        return;
+    }
+
+    // Build HTML for each food
+    let html = '';
+    for (const foodName in savedNutrition) {
+        const food = savedNutrition[foodName];
+        html += `
+            <div class="food-item" id="library-${foodName}">
+                <div class="food-header">
+                    <span class="food-name">${foodName}</span>
+                    <span class="meal-badge">${food.baseAmount} ${food.unit}</span>
+                </div>
+                <div class="food-details">
+                    🔥 ${food.calories} kcal &nbsp;|&nbsp;
+                    💪 ${food.protein}g protein &nbsp;|&nbsp;
+                    🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
+                    🧈 ${food.fats}g fats &nbsp;|&nbsp;
+                    🌾 ${food.fiber || 0}g fiber
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="editFood('${foodName}')" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">✏️ Edit</button>
+                    <button onclick="deleteFood('${foodName}')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer;">🗑️ Delete</button>
+                </div>
+            </div>
+        `;
+    }
+    libraryList.innerHTML = html;
+}
+
+// CREATE - Add a new food to the library
+function addToLibrary() {
+    const foodName = document.getElementById('libraryFoodName').value.trim();
+    const unit = document.getElementById('libraryUnit').value;
+    const calories = parseFloat(document.getElementById('libraryCalories').value) || 0;
+    const protein = parseFloat(document.getElementById('libraryProtein').value) || 0;
+    const carbs = parseFloat(document.getElementById('libraryCarbs').value) || 0;
+    const fats = parseFloat(document.getElementById('libraryFats').value) || 0;
+    const fiber = parseFloat(document.getElementById('libraryFiber').value) || 0;
+
+    // Validate
+    if (!foodName) { alert('Please enter a food name!'); return; }
+    if (!unit) { alert('Please select a unit!'); return; }
+    if (calories === 0) { alert('Please enter at least the calories!'); return; }
+
+    const baseAmount = unit === 'grams' ? 100 : 1;
+
+    // Get existing database
+    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+
+    // Check if food already exists
+    if (savedNutrition[foodName.toLowerCase()]) {
+        const overwrite = confirm(`"${foodName}" already exists in your library. Do you want to overwrite it?`);
+        if (!overwrite) return;
+    }
+
+    // Save to database
+    savedNutrition[foodName.toLowerCase()] = { unit, baseAmount, calories, protein, carbs, fats, fiber };
+    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+
+    // Clear the form fields
+    document.getElementById('libraryFoodName').value = '';
+    document.getElementById('libraryUnit').value = '';
+    document.getElementById('libraryCalories').value = '';
+    document.getElementById('libraryProtein').value = '';
+    document.getElementById('libraryCarbs').value = '';
+    document.getElementById('libraryFats').value = '';
+    document.getElementById('libraryFiber').value = '';
+
+    alert(`"${foodName}" added to your Food Library! 📚`);
+
+    // Refresh the list
+    renderLibrary();
+}
+
+// DELETE - Remove a food from the library
+function deleteFood(foodName) {
+    const confirm1 = confirm(`Are you sure you want to delete "${foodName}" from your library?`);
+    if (!confirm1) return;
+
+    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+    delete savedNutrition[foodName];
+    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+
+    alert(`"${foodName}" deleted from your library!`);
+    renderLibrary();
+}
+
+// EDIT - Fill the form with existing food data so user can update it
+function editFood(foodName) {
+    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+    const food = savedNutrition[foodName];
+
+    // Fill the add form with existing values
+    document.getElementById('libraryFoodName').value = foodName;
+    document.getElementById('libraryUnit').value = food.unit;
+    document.getElementById('libraryCalories').value = food.calories;
+    document.getElementById('libraryProtein').value = food.protein;
+    document.getElementById('libraryCarbs').value = food.carbs;
+    document.getElementById('libraryFats').value = food.fats;
+    document.getElementById('libraryFiber').value = food.fiber || 0;
+
+    // Delete the old entry so it gets replaced when saved
+    delete savedNutrition[foodName];
+    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+    renderLibrary();
+
+    // Scroll to the form so user can see it
+    document.getElementById('libraryFoodName').scrollIntoView({ behavior: 'smooth' });
+    alert(`Editing "${foodName}" - make your changes and click Add to Library to save!`);
+}
+
+function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    event.target.classList.add('active');
+
+    // If switching to library tab, render the list
+    if (tabName === 'library') {
+        renderLibrary();
+    }
+}
 </script>
 </body>
 </html>
