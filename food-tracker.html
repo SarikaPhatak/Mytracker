@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Tracker</title>
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+
 <style>
     * {
         margin: 0;
@@ -215,22 +217,23 @@
     
     <form id="foodForm">
         <div class="form-group">
-            <label>Date & Time</label>
-            <input type="datetime-local" id="datetime" required>
+            <label>Date</label>
+            <input type="text" id="datetime" placeholder="Select date..." required readonly>
         </div>
         
-        <div class="form-group">
-    <label>Food Name</label>
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="foodName" placeholder="e.g., Roti, Dal, Rice" required style="flex: 1;">
-        <button type="button" onclick="searchNutrition()" class="search-btn">🔍 Search</button>
-    </div>
+       <div class="form-group">
+        <label>Food Name</label>
+        <div style="position: relative;">
+            <input type="text" id="foodName" placeholder="e.g., Roti, Dal, Rice" required oninput="searchLibrary()" autocomplete="off">
+            <!-- Dropdown suggestions -->
+            <div id="foodSuggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #667eea; border-radius: 12px; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"></div>
+        </div>
     </div>
         
         <div class="form-group">
         <label>Portion Size <span style="color: red;">*</span></label>
         <div style="display: flex; gap: 10px;">
-            <input type="number" id="portionAmount" placeholder="e.g. 2" min="0.1" step="0.1" required style="flex: 1;">
+            <input type="number" id="portionAmount" placeholder="e.g. 2" min="0.1" step="0.1" required style="flex: 1;" oninput="recalculateMacros()">
             <select id="portionUnit" required style="flex: 1;">
                 <option value="">Select unit</option>
                 <option value="pieces">Pieces</option>
@@ -348,7 +351,41 @@
     </div>
 
     <div id="historyTab" class="tab-content">
-        <h2 style="color: #333; margin-bottom: 20px;">Food History</h2>
+    <h2 style="color: #333; margin-bottom: 20px;">Food History</h2>
+
+    <!-- Calendar -->
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+        
+        <!-- Calendar Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button type="button" onclick="changeMonth(-1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 25px; cursor: pointer;">← Prev</button>
+            <h3 id="calendarTitle" style="color: #667eea;"></h3>
+            <button type="button" onclick="changeMonth(1)" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 25px; cursor: pointer;">Next →</button>
+        </div>
+
+        <!-- Day Labels -->
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px;">
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Mon</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Tue</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Wed</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Thu</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Fri</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Sat</div>
+            <div style="text-align: center; font-weight: 600; color: #666; font-size: 12px;">Sun</div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;"></div>
+
+        <!-- Legend -->
+        <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 12px; color: #666;">
+            <span>🟢 Food logged</span>
+            <span>🔴 Missed</span>
+            <span>⬜ Future</span>
+        </div>
+    </div>
+
+        <!-- Food List -->
         <div id="foodsList"></div>
     </div>
 
@@ -416,58 +453,130 @@
 </div>
     
 
-
- <script>
-    // Tab switching functionality
+<script>
+    // ============================
+    // TAB SWITCHING
+    // ============================
     function showTab(tabName) {
-        // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        
-        // Remove active class from all tabs
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        
-        // Show selected tab content
         document.getElementById(tabName + 'Tab').classList.add('active');
-        
-        // Add active class to clicked tab
         event.target.classList.add('active');
+
+        if (tabName === 'library') renderLibrary();
+        if (tabName === 'history') { renderHistory(); renderCalendar(); }
+        if (tabName === 'summary') renderSummary();
     }
 
-    async function searchNutrition() {
-        const foodName = document.getElementById('foodName').value.trim();
-        
-        if (!foodName) {
-            alert('Please enter a food name first!');
-            return;
-        }
-        
+    // ============================
+    // AUTOCOMPLETE FUNCTIONS
+    // ============================
+    let selectedFoodBase = null;
+
+    function searchLibrary() {
+        const input = document.getElementById('foodName').value.trim().toLowerCase();
+        const suggestions = document.getElementById('foodSuggestions');
         const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-        
-        if (savedNutrition[foodName.toLowerCase()]) {
-            const nutrition = savedNutrition[foodName.toLowerCase()];
-            fillNutritionFields(nutrition);
-            alert('Found in your saved foods! ✅');
+
+        if (input.length === 0) {
+            suggestions.style.display = 'none';
             return;
         }
-        
-        document.getElementById('saveNutritionBar').style.display = 'block';
-        alert('Food not found in your database! Fill in the nutrition fields manually and save it for future use.');
+
+        const matches = Object.keys(savedNutrition).filter(food =>
+            food.toLowerCase().includes(input)
+        );
+
+        if (matches.length === 0) {
+            suggestions.style.display = 'block';
+            suggestions.innerHTML = `
+                <div style="padding: 12px 15px; color: #999; font-size: 14px;">
+                    🔍 Food not found in library.
+                    <a href="#" onclick="goToLibrary()" style="color: #667eea; font-weight: 600;">Save to Food Library</a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        matches.forEach(foodName => {
+            const food = savedNutrition[foodName];
+            html += `
+                <div onclick="selectFood('${foodName}')" style="padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                    <div style="font-weight: 600; color: #333;">${foodName}</div>
+                    <div style="font-size: 12px; color: #999;">🔥 ${food.calories} kcal per ${food.baseAmount} ${food.unit}</div>
+                </div>
+            `;
+        });
+
+        suggestions.style.display = 'block';
+        suggestions.innerHTML = html;
     }
 
+    function selectFood(foodName) {
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+        const food = savedNutrition[foodName];
+
+        selectedFoodBase = food;
+
+        document.getElementById('foodName').value = foodName;
+        document.getElementById('portionUnit').value = food.unit;
+
+        fillNutritionFields(food);
+        document.getElementById('foodSuggestions').style.display = 'none';
+    }
+
+    function recalculateMacros() {
+        if (!selectedFoodBase) return;
+        fillNutritionFields(selectedFoodBase);
+    }
+
+    function goToLibrary() {
+        document.getElementById('foodSuggestions').style.display = 'none';
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById('libraryTab').classList.add('active');
+        document.querySelectorAll('.tab').forEach(tab => {
+            if (tab.textContent.trim() === '📚 Food Library') tab.classList.add('active');
+        });
+        renderLibrary();
+    }
+
+    document.addEventListener('click', function(e) {
+        const foodInput = document.getElementById('foodName');
+        const suggestions = document.getElementById('foodSuggestions');
+        if (foodInput && !foodInput.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    });
+
+    // ============================
+    // NUTRITION FIELDS
+    // ============================
     function fillNutritionFields(nutrition) {
-        document.getElementById('calories').value = nutrition.calories || 0;
-        document.getElementById('protein').value = nutrition.protein || 0;
-        document.getElementById('carbs').value = nutrition.carbs || 0;
-        document.getElementById('fats').value = nutrition.fats || 0;
-        document.getElementById('fiber').value = nutrition.fiber || 0;
-        document.getElementById('saveNutritionBar').style.display = 'block';
+        // Get user entered portion amount
+        const userAmount = parseFloat(document.getElementById('portionAmount').value) || 1;
+
+        // Calculate multiplier
+        const multiplier = userAmount / nutrition.baseAmount;
+
+        // Fill fields with multiplied values
+        document.getElementById('calories').value = Math.round(nutrition.calories * multiplier);
+        document.getElementById('protein').value = Math.round(nutrition.protein * multiplier * 10) / 10;
+        document.getElementById('carbs').value = Math.round(nutrition.carbs * multiplier * 10) / 10;
+        document.getElementById('fats').value = Math.round(nutrition.fats * multiplier * 10) / 10;
+        document.getElementById('fiber').value = Math.round((nutrition.fiber || 0) * multiplier * 10) / 10;
+
+        // Auto select the unit in the dropdown
+        document.getElementById('portionUnit').value = nutrition.unit;
+
+        // Hide save bar since food was found
+        document.getElementById('saveNutritionBar').style.display = 'none';
     }
-
-
 
     function dismissSaveBar() {
         document.getElementById('saveNutritionBar').style.display = 'none';
@@ -477,15 +586,8 @@
         const foodName = document.getElementById('foodName').value.trim();
         const portionUnit = document.getElementById('portionUnit').value;
 
-        if (!portionUnit) {
-            alert('Please select a portion unit before saving!');
-            return;
-        }
-
-        if (!foodName) {
-            alert('Please enter a food name first!');
-            return;
-        }
+        if (!portionUnit) { alert('Please select a portion unit before saving!'); return; }
+        if (!foodName) { alert('Please enter a food name first!'); return; }
 
         const baseAmount = portionUnit === 'grams' ? 100 : 1;
 
@@ -499,10 +601,7 @@
             fiber: parseFloat(document.getElementById('fiber').value) || 0
         };
 
-        if (nutrition.calories === 0) {
-            alert('Please enter at least the calories before saving!');
-            return;
-        }
+        if (nutrition.calories === 0) { alert('Please enter at least the calories before saving!'); return; }
 
         const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
         savedNutrition[foodName.toLowerCase()] = nutrition;
@@ -511,17 +610,15 @@
         document.getElementById('saveNutritionBar').style.display = 'none';
         alert(`"${foodName}" saved to your database! ✅ Next time you search it, it will auto-fill.`);
     }
+
     // ============================
     // GOALS FUNCTIONS
     // ============================
-
-    // Toggle goals form open/closed
     function toggleGoalsForm() {
         const form = document.getElementById('goalsForm');
         const btn = document.getElementById('goalsToggleBtn');
 
         if (form.style.display === 'none') {
-            // Load existing goals into form before showing
             const goals = JSON.parse(localStorage.getItem('nutritionGoals')) || {};
             if (goals.calories) document.getElementById('goalCalories').value = goals.calories;
             if (goals.protein) document.getElementById('goalProtein').value = goals.protein;
@@ -537,7 +634,6 @@
         }
     }
 
-    // Save goals to localStorage
     function saveGoals() {
         const goals = {
             calories: parseFloat(document.getElementById('goalCalories').value) || 0,
@@ -547,15 +643,9 @@
             fiber: parseFloat(document.getElementById('goalFiber').value) || 0
         };
 
-        // Validate at least calories is set
-        if (goals.calories === 0) {
-            alert('Please enter at least your daily calorie goal!');
-            return;
-        }
+        if (goals.calories === 0) { alert('Please enter at least your daily calorie goal!'); return; }
 
         localStorage.setItem('nutritionGoals', JSON.stringify(goals));
-
-        // Hide form and refresh
         document.getElementById('goalsForm').style.display = 'none';
         document.getElementById('goalsToggleBtn').textContent = '✏️ Edit Goals';
 
@@ -563,26 +653,21 @@
         renderSummary();
     }
 
-    // Render goals display and progress bars
     function renderGoalsDisplay(totals) {
         const goals = JSON.parse(localStorage.getItem('nutritionGoals')) || {};
         const goalsDisplay = document.getElementById('goalsDisplay');
 
-        // If no goals set yet
         if (!goals.calories) {
             goalsDisplay.innerHTML = '<p style="color: #999; font-size: 14px;">No goals set yet. Click "Edit Goals" to set your daily targets!</p>';
             return;
         }
 
-        // Helper function to create a progress bar
         function createProgressBar(label, current, goal, unit) {
             const percentage = Math.min((current / goal) * 100, 100);
             const actualPercentage = (current / goal) * 100;
-
-            // Color based on progress
-            let color = '#28a745';        // green = under goal
-            if (actualPercentage >= 90)  color = '#fd7e14';  // orange = near goal
-            if (actualPercentage >= 100) color = '#dc3545';  // red = over goal
+            let color = '#28a745';
+            if (actualPercentage >= 90) color = '#fd7e14';
+            if (actualPercentage >= 100) color = '#dc3545';
 
             return `
                 <div style="margin-bottom: 15px;">
@@ -608,22 +693,25 @@
             ${createProgressBar('🌾 Fiber', totals.fiber, goals.fiber, 'g')}
         `;
     }
-    // Set current date and time as default
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
-    // Initialize foods array
+    // ============================
+    // FORM SUBMISSION
+    // ============================
+   // Initialize Flatpickr date picker
+    flatpickr('#datetime', {
+        dateFormat: 'Y-m-d',        // How it's stored (YYYY-MM-DD)
+        altInput: true,             // Show a friendly format to user
+        altFormat: 'D, d M Y',     // What user sees e.g. "Sat, 14 Feb 2026"
+        defaultDate: 'today',       // Auto selects today
+        maxDate: 'today',           // Can't pick future dates
+        disableMobile: true         // Use Flatpickr on mobile too
+    });
+
     let foods = JSON.parse(localStorage.getItem('foods')) || [];
 
-    // Handle form submission
     document.getElementById('foodForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const food = {
             id: Date.now(),
             datetime: document.getElementById('datetime').value,
@@ -638,365 +726,355 @@
             fiber: parseFloat(document.getElementById('fiber').value) || 0,
             notes: document.getElementById('notes').value
         };
-        
+
         foods.unshift(food);
         localStorage.setItem('foods', JSON.stringify(foods));
-        
+
         this.reset();
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        document.getElementById('datetime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
-        
+        selectedFoodBase = null;
+
+        // Reset Flatpickr to today after form submit
+        flatpickr('#datetime', {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'D, d M Y',
+            defaultDate: 'today',
+            maxDate: 'today',
+            disableMobile: true
+        });
         alert('Food logged! 🍽️');
     });
 
     // ============================
-// FOOD LIBRARY CRUD FUNCTIONS
-// ============================
+    // FOOD LIBRARY CRUD
+    // ============================
+    function renderLibrary() {
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+        const libraryList = document.getElementById('libraryList');
+        const searchInput = document.getElementById('librarySearch');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-// READ - Render all foods in the library
-function renderLibrary() {
-    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-    const libraryList = document.getElementById('libraryList');
+        if (Object.keys(savedNutrition).length === 0) {
+            libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods in your library yet. Add one above!</p>';
+            return;
+        }
 
-    // Get search term if any
-    const searchInput = document.getElementById('librarySearch');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const filteredFoods = Object.keys(savedNutrition).filter(foodName =>
+            foodName.toLowerCase().includes(searchTerm)
+        );
 
-    // If library is empty show a message
-    if (Object.keys(savedNutrition).length === 0) {
-        libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods in your library yet. Add one above!</p>';
-        return;
+        if (filteredFoods.length === 0) {
+            libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods found matching your search!</p>';
+            return;
+        }
+
+        let html = '';
+        for (const foodName of filteredFoods) {
+            const food = savedNutrition[foodName];
+            html += `
+                <div class="food-item" id="library-${foodName}">
+                    <div class="food-header">
+                        <span class="food-name">${foodName}</span>
+                        <span class="meal-badge">${food.baseAmount} ${food.unit}</span>
+                    </div>
+                    <div class="food-details">
+                        🔥 ${food.calories} kcal &nbsp;|&nbsp;
+                        💪 ${food.protein}g protein &nbsp;|&nbsp;
+                        🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
+                        🧈 ${food.fats}g fats &nbsp;|&nbsp;
+                        🌾 ${food.fiber || 0}g fiber
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button onclick="editFood('${foodName}')" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">✏️ Edit</button>
+                        <button onclick="deleteFood('${foodName}')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer;">🗑️ Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+        libraryList.innerHTML = html;
     }
 
-    // Filter foods based on search term
-    const filteredFoods = Object.keys(savedNutrition).filter(foodName => 
-        foodName.toLowerCase().includes(searchTerm)
-    );
+    function addToLibrary() {
+        const foodName = document.getElementById('libraryFoodName').value.trim();
+        const unit = document.getElementById('libraryUnit').value;
+        const calories = parseFloat(document.getElementById('libraryCalories').value) || 0;
+        const protein = parseFloat(document.getElementById('libraryProtein').value) || 0;
+        const carbs = parseFloat(document.getElementById('libraryCarbs').value) || 0;
+        const fats = parseFloat(document.getElementById('libraryFats').value) || 0;
+        const fiber = parseFloat(document.getElementById('libraryFiber').value) || 0;
 
-    // If search returns no results
-    if (filteredFoods.length === 0) {
-        libraryList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods found matching your search!</p>';
-        return;
+        if (!foodName) { alert('Please enter a food name!'); return; }
+        if (!unit) { alert('Please select a unit!'); return; }
+        if (calories === 0) { alert('Please enter at least the calories!'); return; }
+
+        const baseAmount = unit === 'grams' ? 100 : 1;
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+
+        if (savedNutrition[foodName.toLowerCase()]) {
+            const overwrite = confirm(`"${foodName}" already exists. Overwrite?`);
+            if (!overwrite) return;
+        }
+
+        savedNutrition[foodName.toLowerCase()] = { unit, baseAmount, calories, protein, carbs, fats, fiber };
+        localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+
+        document.getElementById('libraryFoodName').value = '';
+        document.getElementById('libraryUnit').value = '';
+        document.getElementById('libraryCalories').value = '';
+        document.getElementById('libraryProtein').value = '';
+        document.getElementById('libraryCarbs').value = '';
+        document.getElementById('libraryFats').value = '';
+        document.getElementById('libraryFiber').value = '';
+
+        alert(`"${foodName}" added to your Food Library! 📚`);
+        renderLibrary();
     }
-    // Build HTML for each food
-    let html = '';
-    for (const foodName of filteredFoods) {
+
+    function deleteFood(foodName) {
+        if (!confirm(`Delete "${foodName}" from your library?`)) return;
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
+        delete savedNutrition[foodName];
+        localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+        alert(`"${foodName}" deleted!`);
+        renderLibrary();
+    }
+
+    function editFood(foodName) {
+        const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
         const food = savedNutrition[foodName];
-        html += `
-            <div class="food-item" id="library-${foodName}">
-                <div class="food-header">
-                    <span class="food-name">${foodName}</span>
-                    <span class="meal-badge">${food.baseAmount} ${food.unit}</span>
-                </div>
-                <div class="food-details">
-                    🔥 ${food.calories} kcal &nbsp;|&nbsp;
-                    💪 ${food.protein}g protein &nbsp;|&nbsp;
-                    🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
-                    🧈 ${food.fats}g fats &nbsp;|&nbsp;
-                    🌾 ${food.fiber || 0}g fiber
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button onclick="editFood('${foodName}')" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">✏️ Edit</button>
-                    <button onclick="deleteFood('${foodName}')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer;">🗑️ Delete</button>
-                </div>
-            </div>
-        `;
-    }
-    libraryList.innerHTML = html;
-}
 
-// CREATE - Add a new food to the library
-function addToLibrary() {
-    const foodName = document.getElementById('libraryFoodName').value.trim();
-    const unit = document.getElementById('libraryUnit').value;
-    const calories = parseFloat(document.getElementById('libraryCalories').value) || 0;
-    const protein = parseFloat(document.getElementById('libraryProtein').value) || 0;
-    const carbs = parseFloat(document.getElementById('libraryCarbs').value) || 0;
-    const fats = parseFloat(document.getElementById('libraryFats').value) || 0;
-    const fiber = parseFloat(document.getElementById('libraryFiber').value) || 0;
+        document.getElementById('libraryFoodName').value = foodName;
+        document.getElementById('libraryUnit').value = food.unit;
+        document.getElementById('libraryCalories').value = food.calories;
+        document.getElementById('libraryProtein').value = food.protein;
+        document.getElementById('libraryCarbs').value = food.carbs;
+        document.getElementById('libraryFats').value = food.fats;
+        document.getElementById('libraryFiber').value = food.fiber || 0;
 
-    // Validate
-    if (!foodName) { alert('Please enter a food name!'); return; }
-    if (!unit) { alert('Please select a unit!'); return; }
-    if (calories === 0) { alert('Please enter at least the calories!'); return; }
+        delete savedNutrition[foodName];
+        localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
+        renderLibrary();
 
-    const baseAmount = unit === 'grams' ? 100 : 1;
-
-    // Get existing database
-    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-
-    // Check if food already exists
-    if (savedNutrition[foodName.toLowerCase()]) {
-        const overwrite = confirm(`"${foodName}" already exists in your library. Do you want to overwrite it?`);
-        if (!overwrite) return;
+        document.getElementById('libraryFoodName').scrollIntoView({ behavior: 'smooth' });
+        alert(`Editing "${foodName}" - make your changes and click Add to Library to save!`);
     }
 
-    // Save to database
-    savedNutrition[foodName.toLowerCase()] = { unit, baseAmount, calories, protein, carbs, fats, fiber };
-    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
-
-    // Clear the form fields
-    document.getElementById('libraryFoodName').value = '';
-    document.getElementById('libraryUnit').value = '';
-    document.getElementById('libraryCalories').value = '';
-    document.getElementById('libraryProtein').value = '';
-    document.getElementById('libraryCarbs').value = '';
-    document.getElementById('libraryFats').value = '';
-    document.getElementById('libraryFiber').value = '';
-
-    alert(`"${foodName}" added to your Food Library! 📚`);
-
-    // Refresh the list
-    renderLibrary();
-}
-
-// DELETE - Remove a food from the library
-function deleteFood(foodName) {
-    const confirm1 = confirm(`Are you sure you want to delete "${foodName}" from your library?`);
-    if (!confirm1) return;
-
-    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-    delete savedNutrition[foodName];
-    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
-
-    alert(`"${foodName}" deleted from your library!`);
-    renderLibrary();
-}
-
-// EDIT - Fill the form with existing food data so user can update it
-function editFood(foodName) {
-    const savedNutrition = JSON.parse(localStorage.getItem('nutritionDatabase')) || {};
-    const food = savedNutrition[foodName];
-
-    // Fill the add form with existing values
-    document.getElementById('libraryFoodName').value = foodName;
-    document.getElementById('libraryUnit').value = food.unit;
-    document.getElementById('libraryCalories').value = food.calories;
-    document.getElementById('libraryProtein').value = food.protein;
-    document.getElementById('libraryCarbs').value = food.carbs;
-    document.getElementById('libraryFats').value = food.fats;
-    document.getElementById('libraryFiber').value = food.fiber || 0;
-
-    // Delete the old entry so it gets replaced when saved
-    delete savedNutrition[foodName];
-    localStorage.setItem('nutritionDatabase', JSON.stringify(savedNutrition));
-    renderLibrary();
-
-    // Scroll to the form so user can see it
-    document.getElementById('libraryFoodName').scrollIntoView({ behavior: 'smooth' });
-    alert(`Editing "${foodName}" - make your changes and click Add to Library to save!`);
-}
-
-    function showTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        document.getElementById(tabName + 'Tab').classList.add('active');
-        event.target.classList.add('active');
-
-        // If switching to library tab, render the list
-        if (tabName === 'library') {
-            renderLibrary();
-        }
-        // If switching to history tab, render the food history
-        if (tabName === 'history') {
-            renderHistory();
-        }
-        // if switching to summary tab, render today's summary
-        if (tabName === 'summary') {
-            renderSummary();
-        }
-    }
-
+    // ============================
+    // HISTORY & CALENDAR
+    // ============================
     function renderHistory() {
-    const foods = JSON.parse(localStorage.getItem('foods')) || [];
-    const foodsList = document.getElementById('foodsList');
+        const foods = JSON.parse(localStorage.getItem('foods')) || [];
+        const foodsList = document.getElementById('foodsList');
 
-    // If no foods logged yet
-    if (foods.length === 0) {
-        foodsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged yet. Start logging!</p>';
-        return;
-    }
-
-    // Build HTML for each food entry
-    let html = '';
-    foods.forEach(food => {
-        const date = new Date(food.datetime);
-        const formattedDate = date.toLocaleDateString('en-IN', { 
-            day: 'numeric', month: 'short', year: 'numeric' 
-        });
-        const formattedTime = date.toLocaleTimeString('en-IN', { 
-            hour: '2-digit', minute: '2-digit' 
-        });
-
-        html += `
-            <div class="food-item">
-                <div class="food-header">
-                    <span class="food-name">${food.name}</span>
-                    <span class="meal-badge">${food.mealType}</span>
-                </div>
-                <div class="food-details">
-                    📅 ${formattedDate} at ${formattedTime}<br>
-                    🍽️ ${food.portionAmount} ${food.portionUnit}<br>
-                    🔥 ${food.calories} kcal &nbsp;|&nbsp;
-                    💪 ${food.protein}g protein &nbsp;|&nbsp;
-                    🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
-                    🧈 ${food.fats}g fats &nbsp;|&nbsp;
-                    🌾 ${food.fiber || 0}g fiber
-                </div>
-                <div style="margin-top: 10px;">
-                    <button onclick="deleteEntry(${food.id})" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 25px; cursor: pointer;">🗑️ Delete</button>
-                </div>
-            </div>
-        `;
-    });
-
-    foodsList.innerHTML = html;
-}
-
-function deleteEntry(id) {
-    const confirm1 = confirm('Are you sure you want to delete this entry?');
-    if (!confirm1) return;
-
-    let foods = JSON.parse(localStorage.getItem('foods')) || [];
-    foods = foods.filter(food => food.id !== id);
-    localStorage.setItem('foods', JSON.stringify(foods));
-
-    renderHistory();
-}
-
-function renderSummary() {
-    const foods = JSON.parse(localStorage.getItem('foods')) || [];
-    const summaryDiv = document.getElementById('dailySummary');
-
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-
-    // Filter only today's food entries
-    const todaysFoods = foods.filter(food => food.datetime.startsWith(today));
-
-    // Always render goals display even if no foods logged
-    renderGoalsDisplay({ calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
-
-    // If no foods logged today
-    if (todaysFoods.length === 0) {
-        summaryDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged today yet. Start logging!</p>';
-        return;
-    }
-
-    // Calculate total macros
-    const totals = todaysFoods.reduce((acc, food) => {
-        acc.calories += food.calories || 0;
-        acc.protein += food.protein || 0;
-        acc.carbs += food.carbs || 0;
-        acc.fats += food.fats || 0;
-        acc.fiber += food.fiber || 0;
-        return acc;
-    }, { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
-
-    // Round totals to 1 decimal place
-    Object.keys(totals).forEach(key => {
-        totals[key] = Math.round(totals[key] * 10) / 10;
-    });
-
-    // Update goals progress bars with actual totals
-    renderGoalsDisplay(totals);
-    
-    // Group foods by meal type
-    const mealGroups = {};
-    todaysFoods.forEach(food => {
-        if (!mealGroups[food.mealType]) {
-            mealGroups[food.mealType] = {
-                foods: [],
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fats: 0,
-                fiber: 0
-            };
+        if (foods.length === 0) {
+            foodsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged yet. Start logging!</p>';
+            return;
         }
-        mealGroups[food.mealType].foods.push(food);
-        mealGroups[food.mealType].calories += food.calories || 0;
-        mealGroups[food.mealType].protein += food.protein || 0;
-        mealGroups[food.mealType].carbs += food.carbs || 0;
-        mealGroups[food.mealType].fats += food.fats || 0;
-        mealGroups[food.mealType].fiber += food.fiber || 0;
-    });
 
-    // Format today's date nicely
-    const todayFormatted = new Date().toLocaleDateString('en-IN', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
+        let html = '';
+        foods.forEach(food => {
+            const date = new Date(food.datetime);
+            const formattedDate = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+            const formattedTime = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-    // Build the HTML
-    let html = `
-        <p style="color: #999; margin-bottom: 20px;">${todayFormatted}</p>
-
-        <!-- Total Summary Cards -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-            <div class="summary-card">
-                <div class="summary-label">🔥 Total Calories</div>
-                <div class="summary-value">${totals.calories}</div>
-                <div class="summary-label">kcal</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">💪 Protein</div>
-                <div class="summary-value">${totals.protein}g</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">🍚 Carbs</div>
-                <div class="summary-value">${totals.carbs}g</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">🧈 Fats</div>
-                <div class="summary-value">${totals.fats}g</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">🌾 Fiber</div>
-                <div class="summary-value">${totals.fiber}g</div>
-            </div>
-        </div>
-
-        <!-- Meal Breakdown -->
-        <h3 style="color: #667eea; margin-bottom: 15px;">Breakdown by Meal</h3>
-    `;
-
-    // Add each meal group
-    for (const mealType in mealGroups) {
-        const meal = mealGroups[mealType];
-        html += `
-            <div class="food-item" style="margin-bottom: 15px;">
-                <div class="food-header">
-                    <span class="food-name">${mealType}</span>
-                    <span class="meal-badge">🔥 ${Math.round(meal.calories)} kcal</span>
+            html += `
+                <div class="food-item">
+                    <div class="food-header">
+                        <span class="food-name">${food.name}</span>
+                        <span class="meal-badge">${food.mealType}</span>
+                    </div>
+                    <div class="food-details">
+                        📅 ${formattedDate} at ${formattedTime}<br>
+                        🍽️ ${food.portionAmount} ${food.portionUnit}<br>
+                        🔥 ${food.calories} kcal &nbsp;|&nbsp;
+                        💪 ${food.protein}g protein &nbsp;|&nbsp;
+                        🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
+                        🧈 ${food.fats}g fats &nbsp;|&nbsp;
+                        🌾 ${food.fiber || 0}g fiber
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button onclick="deleteEntry(${food.id})" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 25px; cursor: pointer;">🗑️ Delete</button>
+                    </div>
                 </div>
-                <div class="food-details" style="margin-bottom: 8px;">
-                    💪 ${Math.round(meal.protein * 10) / 10}g protein &nbsp;|&nbsp;
-                    🍚 ${Math.round(meal.carbs * 10) / 10}g carbs &nbsp;|&nbsp;
-                    🧈 ${Math.round(meal.fats * 10) / 10}g fats &nbsp;|&nbsp;
-                    🌾 ${Math.round(meal.fiber * 10) / 10}g fiber
-                </div>
-                <div style="border-top: 1px solid #e0e0e0; padding-top: 8px;">
-                    ${meal.foods.map(food => `
-                        <div style="color: #666; font-size: 13px; padding: 3px 0;">
-                            • ${food.name} (${food.portionAmount} ${food.portionUnit}) - ${food.calories} kcal
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+            `;
+        });
+
+        foodsList.innerHTML = html;
     }
 
-    summaryDiv.innerHTML = html;
-}
+    function deleteEntry(id) {
+        if (!confirm('Delete this entry?')) return;
+        let foods = JSON.parse(localStorage.getItem('foods')) || [];
+        foods = foods.filter(food => food.id !== id);
+        localStorage.setItem('foods', JSON.stringify(foods));
+        renderHistory();
+    }
+
+    let currentCalendarDate = new Date();
+
+    function renderCalendar() {
+        const foods = JSON.parse(localStorage.getItem('foods')) || [];
+        const today = new Date();
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+
+        document.getElementById('calendarTitle').textContent = currentCalendarDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+        const loggedDates = new Set(foods.map(food => food.datetime.split('T')[0]));
+        const firstDay = new Date(year, month, 1);
+        let startDayOfWeek = firstDay.getDay();
+        startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let html = '';
+        for (let i = 0; i < startDayOfWeek; i++) html += '<div></div>';
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateObj = new Date(year, month, day);
+            const isToday = dateStr === today.toISOString().split('T')[0];
+            const isPast = dateObj < today && !isToday;
+            const hasFood = loggedDates.has(dateStr);
+
+            let bgColor = '#e0e0e0';
+            let textColor = '#999';
+            let cursor = 'default';
+
+            if (hasFood) { bgColor = '#d4edda'; textColor = '#28a745'; cursor = 'pointer'; }
+            else if (isPast) { bgColor = '#ffcccc'; textColor = '#cc0000'; }
+            if (isToday) { bgColor = '#d4edda'; textColor = '#155724'; }
+
+            const border = isToday ? '3px solid #28a745' : '3px solid transparent';
+
+            html += `
+                <div onclick="${hasFood ? `viewDaySummary('${dateStr}')` : ''}"
+                    style="text-align: center; padding: 8px 4px; border-radius: 8px; background: ${bgColor}; color: ${textColor}; font-weight: ${isToday ? 'bold' : 'normal'}; border: ${border}; cursor: ${cursor}; font-size: 14px;">
+                    ${day}
+                </div>
+            `;
+        }
+
+        document.getElementById('calendarGrid').innerHTML = html;
+    }
+
+    function changeMonth(direction) {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+        renderCalendar();
+    }
+
+    function viewDaySummary(dateStr) {
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById('summaryTab').classList.add('active');
+        document.querySelectorAll('.tab').forEach(tab => {
+            if (tab.textContent.trim() === 'Summary') tab.classList.add('active');
+        });
+        renderSummary(dateStr);
+    }
+
+    // ============================
+    // SUMMARY
+    // ============================
+    function renderSummary(date) {
+        const foods = JSON.parse(localStorage.getItem('foods')) || [];
+        const summaryDiv = document.getElementById('dailySummary');
+        const selectedDate = date || new Date().toISOString().split('T')[0];
+        const todaysFoods = foods.filter(food => food.datetime.startsWith(selectedDate));
+
+        renderGoalsDisplay({ calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
+
+        if (todaysFoods.length === 0) {
+            summaryDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged for this day yet!</p>';
+            return;
+        }
+
+        const totals = todaysFoods.reduce((acc, food) => {
+            acc.calories += food.calories || 0;
+            acc.protein += food.protein || 0;
+            acc.carbs += food.carbs || 0;
+            acc.fats += food.fats || 0;
+            acc.fiber += food.fiber || 0;
+            return acc;
+        }, { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
+
+        Object.keys(totals).forEach(key => {
+            totals[key] = Math.round(totals[key] * 10) / 10;
+        });
+
+        renderGoalsDisplay(totals);
+
+        const mealGroups = {};
+        todaysFoods.forEach(food => {
+            if (!mealGroups[food.mealType]) {
+                mealGroups[food.mealType] = { foods: [], calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 };
+            }
+            mealGroups[food.mealType].foods.push(food);
+            mealGroups[food.mealType].calories += food.calories || 0;
+            mealGroups[food.mealType].protein += food.protein || 0;
+            mealGroups[food.mealType].carbs += food.carbs || 0;
+            mealGroups[food.mealType].fats += food.fats || 0;
+            mealGroups[food.mealType].fiber += food.fiber || 0;
+        });
+
+        const todayFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+
+        let html = `
+            <p style="color: #999; margin-bottom: 20px;">${todayFormatted}</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+                <div class="summary-card">
+                    <div class="summary-label">🔥 Total Calories</div>
+                    <div class="summary-value">${totals.calories}</div>
+                    <div class="summary-label">kcal</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">💪 Protein</div>
+                    <div class="summary-value">${totals.protein}g</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">🍚 Carbs</div>
+                    <div class="summary-value">${totals.carbs}g</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">🧈 Fats</div>
+                    <div class="summary-value">${totals.fats}g</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">🌾 Fiber</div>
+                    <div class="summary-value">${totals.fiber}g</div>
+                </div>
+            </div>
+            <h3 style="color: #667eea; margin-bottom: 15px;">Breakdown by Meal</h3>
+        `;
+
+        for (const mealType in mealGroups) {
+            const meal = mealGroups[mealType];
+            html += `
+                <div class="food-item" style="margin-bottom: 15px;">
+                    <div class="food-header">
+                        <span class="food-name">${mealType}</span>
+                        <span class="meal-badge">🔥 ${Math.round(meal.calories)} kcal</span>
+                    </div>
+                    <div class="food-details" style="margin-bottom: 8px;">
+                        💪 ${Math.round(meal.protein * 10) / 10}g protein &nbsp;|&nbsp;
+                        🍚 ${Math.round(meal.carbs * 10) / 10}g carbs &nbsp;|&nbsp;
+                        🧈 ${Math.round(meal.fats * 10) / 10}g fats &nbsp;|&nbsp;
+                        🌾 ${Math.round(meal.fiber * 10) / 10}g fiber
+                    </div>
+                    <div style="border-top: 1px solid #e0e0e0; padding-top: 8px;">
+                        ${meal.foods.map(food => `
+                            <div style="color: #666; font-size: 13px; padding: 3px 0;">
+                                • ${food.name} (${food.portionAmount} ${food.portionUnit}) - ${food.calories} kcal
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        summaryDiv.innerHTML = html;
+    }
 
 </script>
 </body>
