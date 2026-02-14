@@ -270,6 +270,14 @@
             <label>Notes (Optional)</label>
             <textarea id="notes" placeholder="Meal type, how you felt, etc."></textarea>
         </div>
+
+        <div id="saveNutritionBar" style="display: none; background: #f0f7ff; border: 2px solid #667eea; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+        <p style="margin-bottom: 10px; color: #333; font-weight: 600;">💾 Save this food to your database for future use?</p>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="saveToDatabase()" class="search-btn">✅ Save to My Database</button>
+            <button type="button" onclick="dismissSaveBar()" style="padding: 12px 20px; background: #ccc; border: none; border-radius: 10px; cursor: pointer;">❌ No Thanks</button>
+        </div>
+    </div>
         
         <button type="submit" class="btn">Log Food</button>
     </form>
