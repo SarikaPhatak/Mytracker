@@ -55,7 +55,7 @@
         width: 100%;
         padding: 12px;
         border: 2px solid #e0e0e0;
-        border-radius: 10px;
+        border-radius: 25px;
         font-size: 16px;
     }
 
@@ -259,7 +259,7 @@
         <h3 class="section-heading">Macros</h3>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-            
+
         <div class="form-group">
             <label>Calories (kcal) <span style="color: #999; font-size: 12px;">(Optional)</span></label>
             <input type="number" id="calories" placeholder="0">
@@ -370,7 +370,6 @@
     </div>
  
 </div>
-
     
 
 
@@ -652,6 +651,192 @@ function showTab(tabName) {
     if (tabName === 'library') {
         renderLibrary();
     }
+    // If switching to history tab, render the food history
+    if (tabName === 'history') {
+        renderHistory();
+    }
+    // if switching to summary tab, render today's summary
+    if (tabName === 'summary') {
+        renderSummary();
+    }
+    
+
+    function renderHistory() {
+    const foods = JSON.parse(localStorage.getItem('foods')) || [];
+    const foodsList = document.getElementById('foodsList');
+
+    // If no foods logged yet
+    if (foods.length === 0) {
+        foodsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged yet. Start logging!</p>';
+        return;
+    }
+
+    // Build HTML for each food entry
+    let html = '';
+    foods.forEach(food => {
+        const date = new Date(food.datetime);
+        const formattedDate = date.toLocaleDateString('en-IN', { 
+            day: 'numeric', month: 'short', year: 'numeric' 
+        });
+        const formattedTime = date.toLocaleTimeString('en-IN', { 
+            hour: '2-digit', minute: '2-digit' 
+        });
+
+        html += `
+            <div class="food-item">
+                <div class="food-header">
+                    <span class="food-name">${food.name}</span>
+                    <span class="meal-badge">${food.mealType}</span>
+                </div>
+                <div class="food-details">
+                    📅 ${formattedDate} at ${formattedTime}<br>
+                    🍽️ ${food.portionAmount} ${food.portionUnit}<br>
+                    🔥 ${food.calories} kcal &nbsp;|&nbsp;
+                    💪 ${food.protein}g protein &nbsp;|&nbsp;
+                    🍚 ${food.carbs}g carbs &nbsp;|&nbsp;
+                    🧈 ${food.fats}g fats &nbsp;|&nbsp;
+                    🌾 ${food.fiber || 0}g fiber
+                </div>
+                <div style="margin-top: 10px;">
+                    <button onclick="deleteEntry(${food.id})" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 25px; cursor: pointer;">🗑️ Delete</button>
+                </div>
+            </div>
+        `;
+    });
+
+    foodsList.innerHTML = html;
+}
+
+function deleteEntry(id) {
+    const confirm1 = confirm('Are you sure you want to delete this entry?');
+    if (!confirm1) return;
+
+    let foods = JSON.parse(localStorage.getItem('foods')) || [];
+    foods = foods.filter(food => food.id !== id);
+    localStorage.setItem('foods', JSON.stringify(foods));
+
+    renderHistory();
+}
+
+function renderSummary() {
+    const foods = JSON.parse(localStorage.getItem('foods')) || [];
+    const summaryDiv = document.getElementById('dailySummary');
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
+    // Filter only today's food entries
+    const todaysFoods = foods.filter(food => food.datetime.startsWith(today));
+
+    // If no foods logged today
+    if (todaysFoods.length === 0) {
+        summaryDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No foods logged today yet. Start logging!</p>';
+        return;
+    }
+
+    // Calculate total macros
+    const totals = todaysFoods.reduce((acc, food) => {
+        acc.calories += food.calories || 0;
+        acc.protein += food.protein || 0;
+        acc.carbs += food.carbs || 0;
+        acc.fats += food.fats || 0;
+        acc.fiber += food.fiber || 0;
+        return acc;
+    }, { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 });
+
+    // Round totals to 1 decimal place
+    Object.keys(totals).forEach(key => {
+        totals[key] = Math.round(totals[key] * 10) / 10;
+    });
+
+    // Group foods by meal type
+    const mealGroups = {};
+    todaysFoods.forEach(food => {
+        if (!mealGroups[food.mealType]) {
+            mealGroups[food.mealType] = {
+                foods: [],
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fats: 0,
+                fiber: 0
+            };
+        }
+        mealGroups[food.mealType].foods.push(food);
+        mealGroups[food.mealType].calories += food.calories || 0;
+        mealGroups[food.mealType].protein += food.protein || 0;
+        mealGroups[food.mealType].carbs += food.carbs || 0;
+        mealGroups[food.mealType].fats += food.fats || 0;
+        mealGroups[food.mealType].fiber += food.fiber || 0;
+    });
+
+    // Format today's date nicely
+    const todayFormatted = new Date().toLocaleDateString('en-IN', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    // Build the HTML
+    let html = `
+        <p style="color: #999; margin-bottom: 20px;">${todayFormatted}</p>
+
+        <!-- Total Summary Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+            <div class="summary-card">
+                <div class="summary-label">🔥 Total Calories</div>
+                <div class="summary-value">${totals.calories}</div>
+                <div class="summary-label">kcal</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">💪 Protein</div>
+                <div class="summary-value">${totals.protein}g</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">🍚 Carbs</div>
+                <div class="summary-value">${totals.carbs}g</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">🧈 Fats</div>
+                <div class="summary-value">${totals.fats}g</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">🌾 Fiber</div>
+                <div class="summary-value">${totals.fiber}g</div>
+            </div>
+        </div>
+
+        <!-- Meal Breakdown -->
+        <h3 style="color: #667eea; margin-bottom: 15px;">Breakdown by Meal</h3>
+    `;
+
+    // Add each meal group
+    for (const mealType in mealGroups) {
+        const meal = mealGroups[mealType];
+        html += `
+            <div class="food-item" style="margin-bottom: 15px;">
+                <div class="food-header">
+                    <span class="food-name">${mealType}</span>
+                    <span class="meal-badge">🔥 ${Math.round(meal.calories)} kcal</span>
+                </div>
+                <div class="food-details" style="margin-bottom: 8px;">
+                    💪 ${Math.round(meal.protein * 10) / 10}g protein &nbsp;|&nbsp;
+                    🍚 ${Math.round(meal.carbs * 10) / 10}g carbs &nbsp;|&nbsp;
+                    🧈 ${Math.round(meal.fats * 10) / 10}g fats &nbsp;|&nbsp;
+                    🌾 ${Math.round(meal.fiber * 10) / 10}g fiber
+                </div>
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 8px;">
+                    ${meal.foods.map(food => `
+                        <div style="color: #666; font-size: 13px; padding: 3px 0;">
+                            • ${food.name} (${food.portionAmount} ${food.portionUnit}) - ${food.calories} kcal
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    summaryDiv.innerHTML = html;
+}
+
 }
 </script>
 </body>
